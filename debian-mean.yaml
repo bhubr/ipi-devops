@@ -1,5 +1,5 @@
 ---
-- name: Install curl
+- name: Setup MEAN stack + Nginx + MySQL
   hosts: vms
   remote_user: root
 
@@ -12,3 +12,12 @@
     ansible.builtin.apt:
       name: nginx
       state: latest
+  - name: Ensure gnupg is at the latest version
+    ansible.builtin.apt:
+      name: gnupg
+      state: latest
+  - name: Download file with check (md5)
+    get_url:
+      url: https://dev.mysql.com/get/mysql-apt-config_0.8.20-1_all.deb
+      dest: /tmp/mysql-apt-config_0.8.20-1_all.deb
+      checksum: md5:799bb0aefb93d30564fa47fc5d089aeb
