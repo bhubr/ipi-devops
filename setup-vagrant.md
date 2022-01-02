@@ -48,11 +48,15 @@ Juste pour verifier que tout fonctionne correctement !
 * Creer un dossier `DevOps` : `mkdir DevOps`
 * Puis creer un sous-dossier `TestDebian` : `mkdir DevOps\TestDebian`
 * Aller sous ce dossier : `cd DevOps\TestDebian`
-* Initialiser une machine virtuelle Debian (version 11 nom de code "bullseye") : `vagrant init debian/bullseye64`
+* Initialiser une machine virtuelle. On a choisi une Debian 64-bits (version 11, au nom de code "bullseye") : `vagrant init debian/bullseye64`
 * La commande précédente a généré un fichier `Vagrantfile`, qu'on va garder tel quel
 * Puis demarrer la VM : `vagrant up` (devrait donner l'affichage assez verbeux ci-dessous)
 * Puis se connecter dans la VM : `vagrant ssh`
 * Si tout a bien fonctionné : quitter la session SSH en saisissant `logout`
+* Arrêter la VM : `vagrant halt`
+* **Garder PowerShell ouvert** (il va nous resservir !)
+
+Sortie obtenue en lançant `vagrant up` (notez que la box `debian/bullseye64` est téléchargée depuis le dépôt Vagrant Cloud) :
 
 ```
 Bringing machine 'default' up with 'virtualbox' provider...
@@ -123,7 +127,21 @@ or on a per folder basis within the Vagrantfile:
 
 ## Vagrantfile pour configurer plusieurs VMs
 
-Sortie :
+Dans votre PowerShell, vérifiez l'endroit où vous vous trouvez en examinant l'invite de commandes. Elle devrait ressembler à ceci :
+
+```
+PS C:\Users\IPI\Documents\DevOps\TestDebian>
+```
+
+À partir de là
+
+* **Remonter d'un niveau dans l'arborescence** : `cd ..`
+* Créer un nouveau dossier `AnsibleDebian` : `mkdir AnsibleDebian`
+* Se placer dans ce dossier :  `cd AnsibleDebian`
+* Télécharger un `Vagrantfile` un peu plus complexe, depuis <https://m1cp.bhu.ovh/vagrant-2-vms/Vagrantfile>, en lançant cette commande : `Invoke-WebRequest -Uri "https://m1cp.bhu.ovh/vagrant-2-vms/Vagrantfile" -OutFile ".\Vagrantfile"`
+* Démarrer les VMs : `vagrant up`
+
+La sortie obtenue ressemble a ceci :
 
 ```
 Bringing machine 'managed-host1' up with 'virtualbox' provider...
