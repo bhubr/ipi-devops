@@ -1,5 +1,10 @@
 # Ansible install
 
+:warning: missing steps (on target VM)
+
+* Install sudo
+* Add regular user to sudoers
+
 ## Install with stock Python on MacOS (10.14.x Mojave)
 
 Mojave ships with Python 2.7.

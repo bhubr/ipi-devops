@@ -1,10 +1,3 @@
-# Ansible playbooks
-
-[Source](https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html)
-
-Sample playbook (`debian-curl.yaml`)
-
-```yaml
 ---
 - name: Install curl
   hosts: vms
@@ -15,4 +8,7 @@ Sample playbook (`debian-curl.yaml`)
     ansible.builtin.apt:
       name: curl
       state: latest
-```
+  - name: Ensure nginx is at the latest version
+    ansible.builtin.apt:
+      name: nginx
+      state: latest
