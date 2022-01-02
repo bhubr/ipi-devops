@@ -142,3 +142,25 @@ Change user from `johndoe` to `root`.
 
     [vms]
     localhost:2232
+
+## Test a playbook
+
+MBP-de-Benoit-2:~ benoit$ ansible-playbook debian-curl.yaml 
+
+    [DEPRECATION WARNING]: Ansible will require Python 3.8 or newer on the controller starting with Ansible 2.12. Current 
+    version: 2.7.16 (default, Mar 25 2021, 18:52:10) [GCC 4.2.1 Compatible Apple LLVM 10.0.1 (clang-1001.0.37.14)]. This feature 
+    will be removed from ansible-core in version 2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False
+    in ansible.cfg.
+    /Users/benoit/Library/Python/2.7/lib/python/site-packages/ansible/parsing/vault/__init__.py:44: CryptographyDeprecationWarning: Python 2 is no longer supported by the Python core team. Support for it is now deprecated in cryptography, and will be removed in the next release.
+      from cryptography.exceptions import InvalidSignature
+
+    PLAY [Install curl] **********************************************************************************************************
+
+    TASK [Gathering Facts] *******************************************************************************************************
+    ok: [localhost]
+
+    TASK [Ensure curl is at the latest version] **********************************************************************************
+    ok: [localhost]
+
+    PLAY RECAP *******************************************************************************************************************
+    localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
