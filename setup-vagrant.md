@@ -1,6 +1,8 @@
 # TP Ansible
 
-## Qu'est-ce qu'Ansible ?
+## Introduction / Outils
+
+### Qu'est-ce qu'Ansible ?
 
 Ansible est un outil permettant d'automatiser toutes sortes de tâches sur des serveurs.
 
@@ -10,13 +12,13 @@ On va, par exemple, pouvoir lancer la même commande sur tous les _managed nodes
 
 L'intérêt est d'automatiser la configuration de serveurs, ce qui offre un gain de temps d'autant plus appréciable que la "flotte" de machines à configurer est conséquente.
 
-## Ansible sous Windows ?
+### Ansible sous Windows ?
 
 Ansible est un outil orienté Unix. De fait, le _control node_ doit impérativement être un système Un*x ("Unix-like") tel que Linux, FreeBSD, MacOS, etc. Le portage du contrôleur Ansible sous Windows est, de l'aveu de ses développeurs, une tâche colossale, qui ne sera vraisemblablement pas réalisée avant quelques années.
 
 Afin de pouvoir travailler avec Ansible sous Windows, nous allons donc utiliser des machines virtuelles : une pour le _control node_, et au moins une seconde, voire plusieurs, pour les _managed nodes_.
 
-## VirtualBox ?
+### VirtualBox ?
 
 Une approche possible est d'utiliser VirtualBox, en préparant manuellement des machines virtuelles. Cela implique entre autres de paramétrer :
 
@@ -28,13 +30,13 @@ Il faut également télécharger une "image ISO" d'une distribution Linux (Debia
 
 Cette procédure est assez rapide quand on en a l'habitude, et une fois la première VM ainsi configurée, il est facile de la cloner pour éviter la duplication d'efforts. Cependant, il est tout aussi facile de faire une erreur au cours de la procédure, quand on débute !
 
-## Vagrant
+### Vagrant
 
 Vagrant permet de configurer très facilement des machines virtuelles, à partir d'un fichier de configuration, le `Vagrantfile`.
 
 Vagrant repose par défaut sur VirtualBox, mais offre, entre autres avantages, la simplicité et rapidité de mise en oeuvre : au lieu de devoir installer soi-même un OS dans une VM, on peut démarrer une VM à partir d'une "box" pré-configurée, téléchargée automatiquement par Vagrant depuis un dépôt central.
 
-## Installation et configuration de Vagrant
+### Installation et configuration de Vagrant
 
 * Télécharger la version **64-bit** depuis [la page officielle de téléchargements](https://www.vagrantup.com/downloads)
 * Lancer l'installeur (5 étapes, garder les choix proposés par défaut)
@@ -127,6 +129,8 @@ or on a per folder basis within the Vagrantfile:
 
 ## Vagrantfile pour configurer plusieurs VMs
 
+### Obtenir le Vagrantfile et lancer les VMs
+
 Dans votre PowerShell, vérifiez l'endroit où vous vous trouvez en examinant l'invite de commandes. Elle devrait ressembler à ceci :
 
 ```
@@ -215,4 +219,100 @@ Bringing machine 'ansible-host' up with 'virtualbox' provider...
 ==> ansible-host: from the creator of the Vagrantfile, and not from Vagrant itself:
 ==> ansible-host:
 ==> ansible-host: Vanilla Debian box. See https://app.vagrantup.com/debian for help and bug reports
+```
+
+Les VMs étant démarrées, on va encore devoir faire un peu de configuration, avant de se pencher sur Ansible proprement dit !
+
+### Première connexion aux VMs
+
+Pour tester la connexion vers chaque VM via SSH, on va à nouveau utiliser `vagrant ssh`.
+
+Comme on dispose maintenant de deux VMs, il va cette fois falloir spécifier sur quelle machine on souhaite se connecter.
+
+Commençons par nous connecter sur la VM faisant office de contrôleur Ansible : 
+
+    vagrant ssh ansible-host
+    
+On doit voir apparaître un prompt (invite de commandes) ressemblant à ceci :
+
+    vagrant@ansible-host: $
+
+On peut se déconnecter (`logout`), puis effectuer la même opération pour la VM faisant office de serveur contrôlé par Ansible : `vagrant ssh managed-host1` (puis `logout` une fois qu'on a vérifié que cela fonctionnait).
+
+### Configuration des VMs
+
+`vagrant ssh` permet de se connecter de notre système hôte (la machine Windows) vers les systèmes "invités" (les VMs).
+
+**Note** : Si on n'utilisait pas Vagrant, on utiliserait simplement la commande `ssh` pour se connecter aux VMs. Ce serait le cas si on avait utilisé VirtualBox directement. Le revers de la médaille est qu'on aurait eu un peu plus de configuration à effectuer.
+
+Gardez juste en tête que `vagrant ssh` est spécifique à ce "setup" basé sur Vagrant. Ceci dit, nous allons quand même utiliser `ssh` pour permettre au _control node_ Ansible de se connecter au(x) _managed node(s)_ (ici un seul).
+
+#### Tentative de connexion du _control node_ au _managed node_
+
+Dans le `Vagrantfile` qui a servi à initialiser les 2 VMs, on a attribué une adresse IP statique à chacune des VMs, qui sont sur le même réseau LAN "interne" :
+
+* `192.168.29.4` pour `ansible-host`
+* `192.168.29.2` pour `managed-host1`
+
+Essayons de nous connecter du 1er au 2nd :
+
+* Se connecter à `ansible-host` depuis le système Windows : `vagrant ssh ansible-host`
+* Une fois qu'on est connecté : `ssh 192.168.29.2`
+* On obtient un message d'erreur : `vagrant@192.168.29.4: Permission denied (publickey).`
+
+À ce stade, il peut être intéressant de rappeler quelques bases sur SSH !
+
+**S**ecure **SH**ell permet de créer un tunnel sécurisé entre deux machines : sécurisé, car les informations qui transitent sont chiffrées.
+
+SSH repose sur le chiffrement asymétrique. C'est un sujet assez complexe et qui dépasse le cadre de ce cours, mais en très bref, on a besoin de généré une paire de clés (_keypair_, parfois dénommée biclé en français) :
+
+* Une clé privée qui doit rester sur le serveur **depuis lequel on se connecte**
+* Une clé publique qu'on va placer sur le serveur **auquel on souhaite se connecter**
+
+N'ayant pas pour l'instant de paire de clés, on ne peut pour l'instant pas se connecter du _control node_ au _managed node_.
+
+#### Génération d'une paire de clés SSH
+
+On va générer une paire de clés SSH, depuis le _control node_, via la commande `ssh-keygen`.
+
+L'un de ses nombreux arguments acceptés par cette commande est le type de clé (algorithme utilisé), via `-t` suivi d'un type. Entre autres types possibles : `dsa`, `rsa` (plutôt obsolètes désormais), `ecdsa`, etc.
+
+On va créer une paire de clés de type ECDSA :
+
+    ssh-keygen -t ecdsa
+
+On nous demande alors l'emplacement où sauvegarder la clé :
+
+    Generating public/private ecdsa key pair.
+    Enter file in which to save the key (/home/vagrant/.ssh/id_ecdsa):
+
+Il suffit de valider avec entrée, pour garder le choix par défaut `/home/vagrant/.ssh/id_ecdsa`.
+
+On nous demande ensuite une "passphrase" :
+
+    Enter passphrase (empty for no passphrase):
+
+Par souci de simplicité, on va valider avec entrée **deux fois** pour générer la paire de clés sans passphrase. Ce n'est pas sécurisé, mais cela simplifiera l'exercice.
+
+> Dans un environnement pro, on cherchera à augmenter le niveau de sécurité en spécifiant une passphrase : 15 caractères minimum, 20 de préférence. Des outils permettront d'éviter d'avoir à la saisir trop souvent.
+
+Après la validation de la passphrase vide, on obtient des informations sur l'emplacement des clés privée (`id_ecdsa`) et publique (`id_ecdsa.pub`), l'empreinte de la clé, et un "randomart" qui peut servir à valider la clé de façon visuelle (ce qu'on ne fera pas ici) :
+
+```
+Your identification has been saved in /home/vagrant/.ssh/id_ecdsa
+Your public key has been saved in /home/vagrant/.ssh/id_ecdsa.pub
+The key fingerprint is:
+SHA256:xQbzm8dGcJPISgLAsI80CkkHlWAJzKfTEp+xFdAQv2A vagrant@ansible-host
+The key's randomart image is:
++---[ECDSA 256]---+
+|*B*BBo. o...o.   |
+|oBo+.o. .=oo..   |
+|+o*E=. o .= .    |
+|+*o=. . .o =     |
+|o +  .  S o +    |
+|           o     |
+|                 |
+|                 |
+|                 |
++----[SHA256]-----+
 ```
