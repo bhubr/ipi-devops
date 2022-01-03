@@ -1,4 +1,4 @@
-# TP Ansible
+# Module DevOps / Introduction à Ansible
 
 ## Introduction / Outils
 
@@ -315,4 +315,133 @@ The key's randomart image is:
 |                 |
 |                 |
 +----[SHA256]-----+
+```
+
+On peut vérifier la présence des clés dans le dossier `.ssh` :
+
+    ls -al .ssh
+
+Affichage produit :
+
+    total 24
+    drwx------ 2 vagrant vagrant 4096 Jan  2 23:50 .
+    drwxr-xr-x 3 vagrant vagrant 4096 Jan  2 23:45 ..
+    -rw------- 1 vagrant vagrant  409 Dec 30 17:14 authorized_keys
+    -rw------- 1 vagrant vagrant  513 Jan  2 23:50 id_ecdsa
+    -rw-r--r-- 1 vagrant vagrant  182 Jan  2 23:50 id_ecdsa.pub
+    -rw-r--r-- 1 vagrant vagrant  222 Jan  2 21:56 known_hosts
+
+Profitons-en pour expliquer le rôle des deux autres fichiers :
+
+* `known_hosts` permet de stocker les "empreintes" des serveurs auxquels on se connecte, et de vérifier qu'elles n'ont pas changé lors de connexions ultérieures (ce qui indiquerait vraisemblablement une attaque).
+* `authorized_keys` est l'endroit où on va stocker les clés publiques qu'on veut autoriser à se connecter sous ce compte utilisateur.
+
+**La prochaine étape** va être de copier la clé publique (`id_ecdsa.pub`) vers le fichier `authorized_keys` de la machine sur laquelle on veut se connecter&hellip; ce qu'on ferait normalement via la commande `ssh-copy-id`, de cette façon (on indique en dernier l'IP ou le nom d'hôte de la machine cible, éventuellement précédé d'un nom d'utilisateur séparé de l'IP par un `@`) :
+
+```
+ssh-copy-id -i ~/.ssh/id_ecdsa.pub someuser@192.168.29.2
+```
+
+Problème : en l'état actuel, on ne peut pas se connecter en SSH, ainsi qu'on l'a vu précédemment ! Il y a heureusement plusieurs parades.
+
+Quittez la VM en saisissant `logout`.
+
+#### Installer le plugin `vagrant-scp`
+
+À nouveau, cette étape est un peu spécifique au setup basé sur Vagrant.
+
+Installez le plugin `vagrant-scp`, qui va permettre de faire des copies entre les machines virtuelles et le système hôte Windows.
+    
+```
+vagrant plugin install vagrant-scp
+```
+
+Ensuite, on va pouvoir récupérer la clé publique depuis `ansible-host` :
+
+```
+vagrant scp ansible-host:.ssh/id_ecdsa.pub .
+```
+
+Note : `vagrant scp` utilise la même syntaxe que `scp` (secure copy). Il y a ici deux arguments :
+
+* `ansible-host:.ssh/id_ecdsa.pub` est la source. Avant le `:`, on trouve la machine depuis laquelle on veut récupérer un fichier. Après le `:`, on trouve le chemin relatif au compte utilisateur (`/home/vagrant`) propriétaire du fichier : `.ssh/id_ecdsa.pub`.
+* `.` désigne le répertoire courant sur la machine cible
+
+Puis on va copier la clé vers `managed-host1` :
+
+```
+vagrant scp id_ecdsa.pub managed-host1:
+```
+
+Ici, `id_ecdsa.pub` est la source (située dans le répertoire courant du système hôte), et `managed-host1:` est la destination (implicitement, le répertoire `/home/vagrant` sur `managed-host1`).
+
+On va maintenant se connecter au `managed-host1` :
+
+    vagrant ssh managed-host1
+
+Puis on peut constater que la clé publique s'y trouve bien en lançant `ls`. Ensuite, il va falloir ajouter le contenu de ce fichier au fichier `.ssh/authorized_keys`. On va détailler un peu l'opération.
+
+D'abord, visualisez le contenu actuel du fichier `.ssh/authorized_keys` :
+
+```
+vagrant@managed-host1:~$ cat .ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key
+```
+
+Visualisez maintenant le contenu de `id_ecdsa.pub` :
+
+```
+vagrant@managed-host1:~$ cat id_ecdsa.pub
+ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBBSkxnUn57qBx+qMTLuxPWoV41hrXOVKAt4lYeIb/jOYjuIWprwFZRxBBlXf+VnfbJbEWnSQIEqmp9Bii2Sayfs= vagrant@ansible-host
+```
+
+Cette commande dérivée de la précédente permet de **rediriger** son affichage, en l'ajoutant (via `>>`) au contenu de `authorized_keys`.
+
+    cat id_ecdsa.pub >> .ssh/authorized_keys
+
+Visualisez à nouveau `authorized_keys` :
+
+```
+vagrant@managed-host1:~$ cat .ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key
+ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBBSkxnUn57qBx+qMTLuxPWoV41hrXOVKAt4lYeIb/jOYjuIWprwFZRxBBlXf+VnfbJbEWnSQIEqmp9Bii2Sayfs= vagrant@ansible-host
+```
+
+La clé a bien été ajoutée ! Quittez la session SSH via `logout`.
+
+#### Retour au _control node_
+
+Connexion au control node :
+
+    vagrant ssh ansible-host
+
+À nouveau, tenative de connexion via `ssh` :
+
+    ssh 192.168.29.2
+
+Cette fois-ci, cela fonctionne !
+
+```
+vagrant@ansible-host:~$ ssh 192.168.29.2
+Linux managed-host1 5.10.0-10-amd64 #1 SMP Debian 5.10.84-1 (2021-12-08) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+Last login: Mon Jan  3 00:20:27 2022 from 10.0.2.2
+```
+
+Quittez avec `logout` (raccourci : `Ctrl-D`) pour revenir au control node.
+
+### Installation d'Ansible sur le control node
+
+On arrive enfin au vif du sujet : l'installation d'Ansible !
+
+**Vérifiez que vous êtes bien sur le control node**, en inspectant l'invite de commandes :
+
+```
+vagrant@ansible-host:~$
 ```
