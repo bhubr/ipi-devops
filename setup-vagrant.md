@@ -251,14 +251,14 @@ Gardez juste en tête que `vagrant ssh` est spécifique à ce "setup" basé sur 
 
 Dans le `Vagrantfile` qui a servi à initialiser les 2 VMs, on a attribué une adresse IP statique à chacune des VMs, qui sont sur le même réseau LAN "interne" :
 
-* `192.168.29.4` pour `ansible-host`
-* `192.168.29.2` pour `managed-host1`
+* `192.168.56.1` pour `ansible-host`
+* `192.168.56.10` pour `managed-host1`
 
 Essayons de nous connecter du 1er au 2nd :
 
 * Se connecter à `ansible-host` depuis le système Windows : `vagrant ssh ansible-host`
-* Une fois qu'on est connecté : `ssh 192.168.29.2`
-* On obtient un message d'erreur : `vagrant@192.168.29.4: Permission denied (publickey).`
+* Une fois qu'on est connecté : `ssh 192.168.56.10`
+* On obtient un message d'erreur : `vagrant@192.168.56.1: Permission denied (publickey).`
 
 À ce stade, il peut être intéressant de rappeler quelques bases sur SSH !
 
@@ -339,7 +339,7 @@ Profitons-en pour expliquer le rôle des deux autres fichiers :
 **La prochaine étape** va être de copier la clé publique (`id_ecdsa.pub`) vers le fichier `authorized_keys` de la machine sur laquelle on veut se connecter&hellip; ce qu'on ferait normalement via la commande `ssh-copy-id`, de cette façon (on indique en dernier l'IP ou le nom d'hôte de la machine cible, éventuellement précédé d'un nom d'utilisateur séparé de l'IP par un `@`) :
 
 ```
-ssh-copy-id -i ~/.ssh/id_ecdsa.pub someuser@192.168.29.2
+ssh-copy-id -i ~/.ssh/id_ecdsa.pub someuser@192.168.56.10
 ```
 
 Problème : en l'état actuel, on ne peut pas se connecter en SSH, ainsi qu'on l'a vu précédemment ! Il y a heureusement plusieurs parades.
@@ -417,12 +417,12 @@ Connexion au control node :
 
 À nouveau, tenative de connexion via `ssh` :
 
-    ssh 192.168.29.2
+    ssh 192.168.56.10
 
 Cette fois-ci, cela fonctionne !
 
 ```
-vagrant@ansible-host:~$ ssh 192.168.29.2
+vagrant@ansible-host:~$ ssh 192.168.56.10
 Linux managed-host1 5.10.0-10-amd64 #1 SMP Debian 5.10.84-1 (2021-12-08) x86_64
 
 The programs included with the Debian GNU/Linux system are free software;
@@ -511,7 +511,7 @@ Décommentez la ligne `## [webservers]`, en enlevant les deux `#` **et l'espace 
 Sous cette ligne, insérez l'adresse IP de l'hôte à contrôler :
 
 ```
-192.168.29.2
+192.168.56.10
 ```
 
 Sauvegardez le fichier avec le raccourci Ctrl-O. **Observez bien le bas de l'écran**, où on vous propose d'indiquer le nom du fichier à écrire :
@@ -533,7 +533,7 @@ On va enfin pouvoir exécuter nos premières commandes Ansible. Commencez par ce
 Elle devrait, si tout va bien, se solder par l'affichage suivant :
 
 ```
-192.168.29.2 | SUCCESS => {
+192.168.56.10 | SUCCESS => {
     "ansible_facts": {
         "discovered_interpreter_python": "/usr/bin/python3"
     },
