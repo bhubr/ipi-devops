@@ -644,6 +644,8 @@ Ceci va prendre un peu de temps ! On écope à nouveau d'un message d'erreur, qu
 
 Ce message d'erreur est quelque peu cryptique, mais est facilement explicable : la gestion des paquets logiciels est du ressort de l'administrateur du système, l'utilisateur `root`.
 
+#### Obtention des privilèges root
+
 Le problème est qu'ici, la commande `apt-get` a été invoquée sur l'hôte cible avec les droits de l'utilisateur `vagrant`.
 
 On va relancer la commande en ajoutant, juste derrière `ansible`, le paramètre `--become` qui va permettre de devenir `root` pour exécuter les commandes sur le système cible.
