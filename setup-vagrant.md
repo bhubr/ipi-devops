@@ -232,12 +232,26 @@ Comme on dispose maintenant de deux VMs, il va cette fois falloir spécifier sur
 Commençons par nous connecter sur la VM faisant office de contrôleur Ansible : 
 
     vagrant ssh ansible-host
-    
+
 On doit voir apparaître un prompt (invite de commandes) ressemblant à ceci :
 
     vagrant@ansible-host: $
 
-On peut se déconnecter (`logout`), puis effectuer la même opération pour la VM faisant office de serveur contrôlé par Ansible : `vagrant ssh managed-host1` (puis `logout` une fois qu'on a vérifié que cela fonctionnait).
+Enfin, testons l'accès à Internet :
+
+    ping google.fr
+
+On doit voir s'afficher des séquences d'échange indiquant le temps mis pour la requête à faire l'aller retour :
+
+    vagrant@ansible-host:~$ ping google.fr
+    PING google.fr (142.251.37.163) 56(84) bytes of data.
+    64 bytes from mrs09s14-in-f3.1e100.net (142.251.37.163): icmp_seq=1 ttl=116 time=9.00 ms
+    64 bytes from mrs09s14-in-f3.1e100.net (142.251.37.163): icmp_seq=2 ttl=116 time=7.94 ms
+    64 bytes from mrs09s14-in-f3.1e100.net (142.251.37.163): icmp_seq=3 ttl=116 time=8.95 ms
+
+Dans le cas contraire, rien ne s'affiche sous la ligne `PING`.
+
+On peut se déconnecter (`logout`), puis effectuer la même opération pour la VM faisant office de serveur contrôlé par Ansible : `vagrant ssh managed-host1`. De même, testons l'accès à Internet : `ping google.fr`. Puis `logout` une fois qu'on a vérifié que cela fonctionnait.
 
 ## Configuration des VMs
 
@@ -251,14 +265,14 @@ Gardez juste en tête que `vagrant ssh` est spécifique à ce "setup" basé sur 
 
 Dans le `Vagrantfile` qui a servi à initialiser les 2 VMs, on a attribué une adresse IP statique à chacune des VMs, qui sont sur le même réseau LAN "interne" :
 
-* `192.168.29.4` pour `ansible-host`
-* `192.168.29.2` pour `managed-host1`
+* `192.168.56.1` pour `ansible-host`
+* `192.168.56.10` pour `managed-host1`
 
 Essayons de nous connecter du 1er au 2nd :
 
 * Se connecter à `ansible-host` depuis le système Windows : `vagrant ssh ansible-host`
-* Une fois qu'on est connecté : `ssh 192.168.29.2`
-* On obtient un message d'erreur : `vagrant@192.168.29.4: Permission denied (publickey).`
+* Une fois qu'on est connecté : `ssh 192.168.56.10`
+* On obtient un message d'erreur : `vagrant@192.168.56.1: Permission denied (publickey).`
 
 À ce stade, il peut être intéressant de rappeler quelques bases sur SSH !
 
@@ -336,10 +350,10 @@ Profitons-en pour expliquer le rôle des deux autres fichiers :
 * `known_hosts` permet de stocker les "empreintes" des serveurs auxquels on se connecte, et de vérifier qu'elles n'ont pas changé lors de connexions ultérieures (ce qui indiquerait vraisemblablement une attaque).
 * `authorized_keys` est l'endroit où on va stocker les clés publiques qu'on veut autoriser à se connecter sous ce compte utilisateur.
 
-**La prochaine étape** va être de copier la clé publique (`id_ecdsa.pub`) vers le fichier `authorized_keys` de la machine sur laquelle on veut se connecter&hellip; ce qu'on ferait normalement via la commande `ssh-copy-id`, de cette façon (on indique en dernier l'IP ou le nom d'hôte de la machine cible, éventuellement précédé d'un nom d'utilisateur séparé de l'IP par un `@`) :
+**La prochaine étape** va être de copier la clé publique (`id_ecdsa.pub`) vers le fichier `authorized_keys` de la machine sur laquelle on veut se connecter&hellip; ce qu'on ferait normalement via la commande `ssh-copy-id`, de cette façon (on indique en dernier l'IP ou le nom d'hôte de la machine cible, éventuellement précédé d'un nom d'utilisateur séparé de l'IP par un `@`). Cette commande est un **exemple**, ne la lancez pas !
 
 ```
-ssh-copy-id -i ~/.ssh/id_ecdsa.pub someuser@192.168.29.2
+ssh-copy-id -i ~/.ssh/id_ecdsa.pub someuser@192.168.56.10
 ```
 
 Problème : en l'état actuel, on ne peut pas se connecter en SSH, ainsi qu'on l'a vu précédemment ! Il y a heureusement plusieurs parades.
@@ -417,12 +431,12 @@ Connexion au control node :
 
 À nouveau, tenative de connexion via `ssh` :
 
-    ssh 192.168.29.2
+    ssh 192.168.56.10
 
 Cette fois-ci, cela fonctionne !
 
 ```
-vagrant@ansible-host:~$ ssh 192.168.29.2
+vagrant@ansible-host:~$ ssh 192.168.56.10
 Linux managed-host1 5.10.0-10-amd64 #1 SMP Debian 5.10.84-1 (2021-12-08) x86_64
 
 The programs included with the Debian GNU/Linux system are free software;
@@ -482,9 +496,9 @@ Ensuite, on doit ajouter une clé permettant d'authentifier les paquets :
 
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
 
-Ensuite, on lance `apt-update`, qui permet d'aller chercher la liste des paquets disponibles dans le dépôt ajouté précédemment :
+Ensuite, on lance à nouveau `apt-get update`, qui permet d'aller chercher la liste des paquets disponibles dans le dépôt ajouté précédemment :
 
-    apt update
+    apt-get update
 
 Enfin, on installe Ansible (`-y` permet de passer l'étape de confirmation) :
 
@@ -511,7 +525,14 @@ Décommentez la ligne `## [webservers]`, en enlevant les deux `#` **et l'espace 
 Sous cette ligne, insérez l'adresse IP de l'hôte à contrôler :
 
 ```
-192.168.29.2
+192.168.56.10
+```
+
+Vous devez donc avoir ces deux lignes consécutives :
+
+```
+[webservers]
+192.168.56.10
 ```
 
 Sauvegardez le fichier avec le raccourci Ctrl-O. **Observez bien le bas de l'écran**, où on vous propose d'indiquer le nom du fichier à écrire :
@@ -533,7 +554,7 @@ On va enfin pouvoir exécuter nos premières commandes Ansible. Commencez par ce
 Elle devrait, si tout va bien, se solder par l'affichage suivant :
 
 ```
-192.168.29.2 | SUCCESS => {
+192.168.56.10 | SUCCESS => {
     "ansible_facts": {
         "discovered_interpreter_python": "/usr/bin/python3"
     },
@@ -551,3 +572,163 @@ Vous constaterez que cela ne change rien, et c'est normal, car on n'a qu'un seul
 `-m` permet de spécifier un "module". Ici `ping`. Un module est un genre de "plugin" qui contient des fonctionnalités. C'est une sorte de script qui va être exécuté sur les machines contrôlées, et va renvoyer des informations sous la forme d'une chaîne JSON.
 
 Le module `ping` ne doit pas être confondu avec la commande `ping` du même nom (laquelle permet de vérifier qu'on peut joindre un certain hôte sur le réseau). Elle en est cependant l'équivalent dans Ansible : elle essaie de se connecter à l'hôte, vérifie que Python est installé et utilisable, et retourne `pong` si tout s'est bien passé.
+
+### Commandes ad hoc
+
+Ce qu'on vient de voir est une _ad hoc command_ ou commande ad hoc : cela permet d'exécuter une tâche spécifique sur tous les hôtes ciblés.
+
+Les commandes ad hoc sont simples et rapides à utiliser, mais ne sont pas réutilisables. On verra plus loin le concept de "playbooks", permettant de créer des ensembles de tâches réutilisables.
+
+En attendant, les commandes ad hoc ont leur utilité. Des exemples sont donnés dans la section [Introduction to ad hoc commands](https://docs.ansible.com/ansible/latest/user_guide/intro_adhoc.html) de la doc Ansible.
+
+On y précise l'anatomie d'une commande ad hoc :
+
+    ansible [pattern] -m [module] -a "[module options]"
+
+#### Paramètres de modules
+
+`-a` permet de passer des options spécifiques à un certain module.
+
+Si on se rend sur la documentation du [module ping](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ping_module.html), on voit, sous la section "Parameters", qu'il accepte le paramètre `data`, qui définit la donnée à renvoyer en cas de succès, et dont la valeur par défaut est `pong`.
+
+Essayez ceci, pour changer la valeur de retour :
+
+    ansible all -m ping -a data=hello
+
+On constate que cela a eu l'effet escompté :
+
+    192.168.56.10 | SUCCESS => {
+        "ansible_facts": {
+            "discovered_interpreter_python": "/usr/bin/python3"
+        },
+        "changed": false,
+        "ping": "hello"
+    }
+
+Essayons une autre commande ad hoc. On va utiliser le module `apt` d'Ansible, qui permet de gérer les packages logiciels sur les hôtes contrôlés, via la commande `apt` que nous avions utilisée, manuellement, pour installer Ansible.
+
+    ansible all -m ansible.builtin.apt -a "name=curl state=present"
+
+Ceci permet d'installer le module `curl` s'il n'est pas présent.
+
+On obtient le message suivant :
+
+```
+192.168.56.10 | FAILED! => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": false,
+    "msg": "No package matching 'curl' is available"
+}
+```
+
+C'est étonnant, car le module `curl` est disponibles dans toutes les distributions Linux, et est même, le plus souvent, installé par défaut !
+
+Ici, il nous faut ajouter un paramètre permettant d'exécuter `apt update` que nous avions également utilisée précédemment. Ce paramètre est `update_cache` et il faut le positionner à `yes` (voir la doc du module [ansible.builtin.apt](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html)).
+
+
+    ansible all -m ansible.builtin.apt -a "name=curl state=present update_cache=yes"
+
+Ceci va prendre un peu de temps ! On écope à nouveau d'un message d'erreur, quelque peu différent :
+
+```
+192.168.56.10 | FAILED! => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": false,
+    "msg": "Failed to lock apt for exclusive operation: Failed to lock directory /var/lib/apt/lists/: E:Could not open lock file /var/lib/apt/lists/lock - open (13: Permission denied)"
+}
+```
+
+Ce message d'erreur est quelque peu cryptique, mais est facilement explicable : la gestion des paquets logiciels est du ressort de l'administrateur du système, l'utilisateur `root`.
+
+Le problème est qu'ici, la commande `apt-get` a été invoquée sur l'hôte cible avec les droits de l'utilisateur `vagrant`.
+
+On va relancer la commande en ajoutant, juste derrière `ansible`, le paramètre `--become` qui va permettre de devenir `root` pour exécuter les commandes sur le système cible.
+
+    ansible --become all -m ansible.builtin.apt -a "name=curl state=present update_cache=yes"
+
+À nouveau, cela prend un peu de temps. Normalement, le résultat devrait être semblable à ceci :
+
+```
+192.168.56.10 | CHANGED => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "cache_update_time": 1641178826,
+    "cache_updated": true,
+    "changed": true,
+    "stderr": "",
+    "stderr_lines": [],
+    "stdout": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libcurl4\nThe following NEW packages will be installed:\n  curl libcurl4\n0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.\nNeed to get 608 kB of archives.\nAfter this operation, 1186 kB of additional disk space will be used.\nGet:1 http://deb.debian.org/debian bullseye/main amd64 libcurl4 amd64 7.74.0-1.3+deb11u1 [341 kB]\nGet:2 http://deb.debian.org/debian bullseye/main amd64 curl amd64 7.74.0-1.3+deb11u1 [267 kB]\nFetched 608 kB in 0s (6271 kB/s)\nSelecting previously unselected package libcurl4:amd64.\r\n(Reading database ... \r(Reading database ... 5%\r(Reading database ... 10%\r(Reading database ... 15%\r(Reading database ... 20%\r(Reading database ... 25%\r(Reading database ... 30%\r(Reading database ... 35%\r(Reading database ... 40%\r(Reading database ... 45%\r(Reading database ... 50%\r(Reading database ... 55%\r(Reading database ... 60%\r(Reading database ... 65%\r(Reading database ... 70%\r(Reading database ... 75%\r(Reading database ... 80%\r(Reading database ... 85%\r(Reading database ... 90%\r(Reading database ... 95%\r(Reading database ... 100%\r(Reading database ... 25131 files and directories currently installed.)\r\nPreparing to unpack .../libcurl4_7.74.0-1.3+deb11u1_amd64.deb ...\r\nUnpacking libcurl4:amd64 (7.74.0-1.3+deb11u1) ...\r\nSelecting previously unselected package curl.\r\nPreparing to unpack .../curl_7.74.0-1.3+deb11u1_amd64.deb ...\r\nUnpacking curl (7.74.0-1.3+deb11u1) ...\r\nSetting up libcurl4:amd64 (7.74.0-1.3+deb11u1) ...\r\nSetting up curl (7.74.0-1.3+deb11u1) ...\r\nProcessing triggers for man-db (2.9.4-2) ...\r\nProcessing triggers for libc-bin (2.31-13+deb11u2) ...\r\n",
+    "stdout_lines": [
+        "Reading package lists...",
+        "Building dependency tree...",
+        "Reading state information...",
+        "The following additional packages will be installed:",
+        "  libcurl4",
+        "The following NEW packages will be installed:",
+        "  curl libcurl4",
+        "0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.",
+        "Need to get 608 kB of archives.",
+        "After this operation, 1186 kB of additional disk space will be used.",
+        "Get:1 http://deb.debian.org/debian bullseye/main amd64 libcurl4 amd64 7.74.0-1.3+deb11u1 [341 kB]",
+        "Get:2 http://deb.debian.org/debian bullseye/main amd64 curl amd64 7.74.0-1.3+deb11u1 [267 kB]",
+        "Fetched 608 kB in 0s (6271 kB/s)",
+        "Selecting previously unselected package libcurl4:amd64.",
+        "(Reading database ... ",
+        "(Reading database ... 5%",
+        "(Reading database ... 10%",
+        "(Reading database ... 15%",
+        "(Reading database ... 20%",
+        "(Reading database ... 25%",
+        "(Reading database ... 30%",
+        "(Reading database ... 35%",
+        "(Reading database ... 40%",
+        "(Reading database ... 45%",
+        "(Reading database ... 50%",
+        "(Reading database ... 55%",
+        "(Reading database ... 60%",
+        "(Reading database ... 65%",
+        "(Reading database ... 70%",
+        "(Reading database ... 75%",
+        "(Reading database ... 80%",
+        "(Reading database ... 85%",
+        "(Reading database ... 90%",
+        "(Reading database ... 95%",
+        "(Reading database ... 100%",
+        "(Reading database ... 25131 files and directories currently installed.)",
+        "Preparing to unpack .../libcurl4_7.74.0-1.3+deb11u1_amd64.deb ...",
+        "Unpacking libcurl4:amd64 (7.74.0-1.3+deb11u1) ...",
+        "Selecting previously unselected package curl.",
+        "Preparing to unpack .../curl_7.74.0-1.3+deb11u1_amd64.deb ...",
+        "Unpacking curl (7.74.0-1.3+deb11u1) ...",
+        "Setting up libcurl4:amd64 (7.74.0-1.3+deb11u1) ...",
+        "Setting up curl (7.74.0-1.3+deb11u1) ...",
+        "Processing triggers for man-db (2.9.4-2) ...",
+        "Processing triggers for libc-bin (2.31-13+deb11u2) ..."
+    ]
+}
+```
+
+Notez le début de cette sortie : `192.168.56.10 | CHANGED`.
+
+Cela signifie que la commande a bien effectué des changements sur le système cible. Relancez-la (flèche du haut puis entrée).
+
+Cette fois, le résultat est différent :
+
+```
+192.168.56.10 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "cache_update_time": 1641178826,
+    "cache_updated": false,
+    "changed": false
+}
+```
+
+La commande a réussi, mais n'a appliqué aucun changement sur le système cible, `curl` ayant déjà installé par l'invocation précédente.
+
