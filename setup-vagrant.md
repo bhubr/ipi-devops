@@ -572,3 +572,163 @@ Vous constaterez que cela ne change rien, et c'est normal, car on n'a qu'un seul
 `-m` permet de spécifier un "module". Ici `ping`. Un module est un genre de "plugin" qui contient des fonctionnalités. C'est une sorte de script qui va être exécuté sur les machines contrôlées, et va renvoyer des informations sous la forme d'une chaîne JSON.
 
 Le module `ping` ne doit pas être confondu avec la commande `ping` du même nom (laquelle permet de vérifier qu'on peut joindre un certain hôte sur le réseau). Elle en est cependant l'équivalent dans Ansible : elle essaie de se connecter à l'hôte, vérifie que Python est installé et utilisable, et retourne `pong` si tout s'est bien passé.
+
+### Commandes ad hoc
+
+Ce qu'on vient de voir est une _ad hoc command_ ou commande ad hoc : cela permet d'exécuter une tâche spécifique sur tous les hôtes ciblés.
+
+Les commandes ad hoc sont simples et rapides à utiliser, mais ne sont pas réutilisables. On verra plus loin le concept de "playbooks", permettant de créer des ensembles de tâches réutilisables.
+
+En attendant, les commandes ad hoc ont leur utilité. Des exemples sont donnés dans la section [Introduction to ad hoc commands](https://docs.ansible.com/ansible/latest/user_guide/intro_adhoc.html) de la doc Ansible.
+
+On y précise l'anatomie d'une commande ad hoc :
+
+    ansible [pattern] -m [module] -a "[module options]"
+
+#### Paramètres de modules
+
+`-a` permet de passer des options spécifiques à un certain module.
+
+Si on se rend sur la documentation du [module ping](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ping_module.html), on voit, sous la section "Parameters", qu'il accepte le paramètre `data`, qui définit la donnée à renvoyer en cas de succès, et dont la valeur par défaut est `pong`.
+
+Essayez ceci, pour changer la valeur de retour :
+
+    ansible all -m ping -a data=hello
+
+On constate que cela a eu l'effet escompté :
+
+    192.168.56.10 | SUCCESS => {
+        "ansible_facts": {
+            "discovered_interpreter_python": "/usr/bin/python3"
+        },
+        "changed": false,
+        "ping": "hello"
+    }
+
+Essayons une autre commande ad hoc. On va utiliser le module `apt` d'Ansible, qui permet de gérer les packages logiciels sur les hôtes contrôlés, via la commande `apt` que nous avions utilisée, manuellement, pour installer Ansible.
+
+    ansible all -m ansible.builtin.apt -a "name=curl state=present"
+
+Ceci permet d'installer le module `curl` s'il n'est pas présent.
+
+On obtient le message suivant :
+
+```
+192.168.56.10 | FAILED! => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": false,
+    "msg": "No package matching 'curl' is available"
+}
+```
+
+C'est étonnant, car le module `curl` est disponibles dans toutes les distributions Linux, et est même, le plus souvent, installé par défaut !
+
+Ici, il nous faut ajouter un paramètre permettant d'exécuter `apt update` que nous avions également utilisée précédemment. Ce paramètre est `update_cache` et il faut le positionner à `yes` (voir la doc du module [ansible.builtin.apt](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html)).
+
+
+    ansible all -m ansible.builtin.apt -a "name=curl state=present update_cache=yes"
+
+Ceci va prendre un peu de temps ! On écope à nouveau d'un message d'erreur, quelque peu différent :
+
+```
+192.168.56.10 | FAILED! => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": false,
+    "msg": "Failed to lock apt for exclusive operation: Failed to lock directory /var/lib/apt/lists/: E:Could not open lock file /var/lib/apt/lists/lock - open (13: Permission denied)"
+}
+```
+
+Ce message d'erreur est quelque peu cryptique, mais est facilement explicable : la gestion des paquets logiciels est du ressort de l'administrateur du système, l'utilisateur `root`.
+
+Le problème est qu'ici, la commande `apt-get` a été invoquée sur l'hôte cible avec les droits de l'utilisateur `vagrant`.
+
+On va relancer la commande en ajoutant, juste derrière `ansible`, le paramètre `--become` qui va permettre de devenir `root` pour exécuter les commandes sur le système cible.
+
+    ansible --become all -m ansible.builtin.apt -a "name=curl state=present update_cache=yes"
+
+À nouveau, cela prend un peu de temps. Normalement, le résultat devrait être semblable à ceci :
+
+```
+192.168.56.10 | CHANGED => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "cache_update_time": 1641178826,
+    "cache_updated": true,
+    "changed": true,
+    "stderr": "",
+    "stderr_lines": [],
+    "stdout": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libcurl4\nThe following NEW packages will be installed:\n  curl libcurl4\n0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.\nNeed to get 608 kB of archives.\nAfter this operation, 1186 kB of additional disk space will be used.\nGet:1 http://deb.debian.org/debian bullseye/main amd64 libcurl4 amd64 7.74.0-1.3+deb11u1 [341 kB]\nGet:2 http://deb.debian.org/debian bullseye/main amd64 curl amd64 7.74.0-1.3+deb11u1 [267 kB]\nFetched 608 kB in 0s (6271 kB/s)\nSelecting previously unselected package libcurl4:amd64.\r\n(Reading database ... \r(Reading database ... 5%\r(Reading database ... 10%\r(Reading database ... 15%\r(Reading database ... 20%\r(Reading database ... 25%\r(Reading database ... 30%\r(Reading database ... 35%\r(Reading database ... 40%\r(Reading database ... 45%\r(Reading database ... 50%\r(Reading database ... 55%\r(Reading database ... 60%\r(Reading database ... 65%\r(Reading database ... 70%\r(Reading database ... 75%\r(Reading database ... 80%\r(Reading database ... 85%\r(Reading database ... 90%\r(Reading database ... 95%\r(Reading database ... 100%\r(Reading database ... 25131 files and directories currently installed.)\r\nPreparing to unpack .../libcurl4_7.74.0-1.3+deb11u1_amd64.deb ...\r\nUnpacking libcurl4:amd64 (7.74.0-1.3+deb11u1) ...\r\nSelecting previously unselected package curl.\r\nPreparing to unpack .../curl_7.74.0-1.3+deb11u1_amd64.deb ...\r\nUnpacking curl (7.74.0-1.3+deb11u1) ...\r\nSetting up libcurl4:amd64 (7.74.0-1.3+deb11u1) ...\r\nSetting up curl (7.74.0-1.3+deb11u1) ...\r\nProcessing triggers for man-db (2.9.4-2) ...\r\nProcessing triggers for libc-bin (2.31-13+deb11u2) ...\r\n",
+    "stdout_lines": [
+        "Reading package lists...",
+        "Building dependency tree...",
+        "Reading state information...",
+        "The following additional packages will be installed:",
+        "  libcurl4",
+        "The following NEW packages will be installed:",
+        "  curl libcurl4",
+        "0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.",
+        "Need to get 608 kB of archives.",
+        "After this operation, 1186 kB of additional disk space will be used.",
+        "Get:1 http://deb.debian.org/debian bullseye/main amd64 libcurl4 amd64 7.74.0-1.3+deb11u1 [341 kB]",
+        "Get:2 http://deb.debian.org/debian bullseye/main amd64 curl amd64 7.74.0-1.3+deb11u1 [267 kB]",
+        "Fetched 608 kB in 0s (6271 kB/s)",
+        "Selecting previously unselected package libcurl4:amd64.",
+        "(Reading database ... ",
+        "(Reading database ... 5%",
+        "(Reading database ... 10%",
+        "(Reading database ... 15%",
+        "(Reading database ... 20%",
+        "(Reading database ... 25%",
+        "(Reading database ... 30%",
+        "(Reading database ... 35%",
+        "(Reading database ... 40%",
+        "(Reading database ... 45%",
+        "(Reading database ... 50%",
+        "(Reading database ... 55%",
+        "(Reading database ... 60%",
+        "(Reading database ... 65%",
+        "(Reading database ... 70%",
+        "(Reading database ... 75%",
+        "(Reading database ... 80%",
+        "(Reading database ... 85%",
+        "(Reading database ... 90%",
+        "(Reading database ... 95%",
+        "(Reading database ... 100%",
+        "(Reading database ... 25131 files and directories currently installed.)",
+        "Preparing to unpack .../libcurl4_7.74.0-1.3+deb11u1_amd64.deb ...",
+        "Unpacking libcurl4:amd64 (7.74.0-1.3+deb11u1) ...",
+        "Selecting previously unselected package curl.",
+        "Preparing to unpack .../curl_7.74.0-1.3+deb11u1_amd64.deb ...",
+        "Unpacking curl (7.74.0-1.3+deb11u1) ...",
+        "Setting up libcurl4:amd64 (7.74.0-1.3+deb11u1) ...",
+        "Setting up curl (7.74.0-1.3+deb11u1) ...",
+        "Processing triggers for man-db (2.9.4-2) ...",
+        "Processing triggers for libc-bin (2.31-13+deb11u2) ..."
+    ]
+}
+```
+
+Notez le début de cette sortie : `192.168.56.10 | CHANGED`.
+
+Cela signifie que la commande a bien effectué des changements sur le système cible. Relancez-la (flèche du haut puis entrée).
+
+Cette fois, le résultat est différent :
+
+```
+192.168.56.10 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "cache_update_time": 1641178826,
+    "cache_updated": false,
+    "changed": false
+}
+```
+
+La commande a réussi, mais n'a appliqué aucun changement sur le système cible, `curl` ayant déjà installé par l'invocation précédente.
+
