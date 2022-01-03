@@ -810,3 +810,105 @@ Quelques ressources (choisissez le format qui vous convient le mieux) :
 * La section [YAML Syntax](https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html#yaml-syntax) de la doc Ansible
 * [Introduction à YAML](https://sweetohm.net/article/introduction-yaml.html) en français, mais avec des exemples de manipulation du format YAML en Python, pour les téméraires !
 * [YAML Tutorial | Learn YAML in 18 mins](https://www.youtube.com/watch?v=1uFVr15xDGg) vidéo en anglais (d'une autrice qui propose énormément de contenus très qualitatifs sur le DevOps)
+
+#### Installer un serveur web
+
+Source dont on s'inspire largement : <https://iac.goffinet.org/ansible-linux/un-premier-playbook/>
+
+Aller dans la section "4. un premier livre de jeu". Un exemple de config YAML est donné.
+
+On ne va prendre (copier dans le presse-papier) que les lignes jusqu'à la première tâche :
+
+```yaml
+---
+- name: Configure webserver with nginx
+  hosts: webservers
+  become: True
+  become_method: sudo
+  tasks:
+    - name: install nginx
+      apt:
+        name: nginx
+        update_cache: yes
+```
+
+**Sur le `ansible-host`** (sans être `root`) :
+
+* Editer un nouveau fichier : `nano debian-nginx.yaml`
+* Y coller le bloc ci-dessus
+
+Puis exécuter le playbook : `ansible debian-nginx.yaml`
+
+Il est _possible_ de rencontrer une erreur à ce stade, ce qui a été mon cas !
+
+```
+vagrant@ansible-host:~/nginx$ ansible-playbook debian-nginx.yaml 
+
+PLAY [Configure webserver with nginx] ****************************************************************
+
+TASK [Gathering Facts] *******************************************************************************
+ok: [192.168.56.2]
+
+TASK [install nginx] *********************************************************************************
+fatal: [192.168.56.2]: FAILED! => {"changed": false, "msg": "Failed to update apt cache: E:Release file for http://deb.debian.org/debian/dists/bullseye-updates/InRelease is not valid yet (invalid for another 2h 46min 20s). Updates for this repository will not be applied., E:Release file for http://deb.debian.org/debian/dists/bullseye-backports/InRelease is not valid yet (invalid for another 2h 46min 20s). Updates for this repository will not be applied."}
+
+PLAY RECAP *******************************************************************************************
+192.168.56.2               : ok=1    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+
+```
+
+L'erreur provient de problèmes sur les dépôts `bullseye-updates` et `bullseye-backports` référencés dans `/etc/apt/sources.list`.
+
+Dans ce cas et **dans ce cas seulement**, ajouter cette tâche au-dessus de la tâche "install nginx" de `debian-nginx.yaml` :
+
+```
+    - name: disable bullseye-updates and bullseye-backports
+      replace:
+        path: /etc/apt/sources.list
+        regexp: '^deb(-src)? (.*) bullseye-(updates|backports) main'
+        replace: '#deb\1 \2 bullseye-\3 main'
+```
+
+Cela permet d'ajouter un `#` dans les lignes incriminées de `/etc/apt/sources.list`, afin de désactiver ces dépôts (ce qui n'aura normalement pas d'incidence pour la suite).
+
+**Si tout se passe bien**, on va passer à la suite. Toujours dans le même dossier, lancez cette commande :
+
+    wget https://github.com/bhubr/ipi-devops/raw/master/sample-playbooks/nginx/nginx-files.tar
+
+Cela vous permet de récupérer une archive "tar" (le format d'archive natif d'Unix) contenant des fichiers supplémentaires pour nginx :
+
+* Un fichier de configuration,
+* Un fichier `index.html`,
+
+Qui vont remplacer ceux fournis par défaut avec nginx.
+
+Décompressez cette archive :
+
+    tar xvf nginx-files.tar
+
+Cela devrait afficher la liste des fichiers :
+
+```
+files/
+files/nginx.conf
+templates/
+templates/index.html
+```
+
+(le fichier `files/._nginx-default.conf` ne sert à rien et a été ajouté automatiquement par mon Mac !)
+
+Ensuite, éditez à nouveau le fichier du playbook nginx : `nano nginx-debian.yaml`.
+
+Ajoutez, sous la tâche "install nginx", les deux tâches suivantes :
+
+```
+    - name: copy nginx config file
+      copy:
+        src: files/nginx.conf
+        dest: /etc/nginx/sites-available/default
+    - name: enable configuration
+      file:
+        dest: /etc/nginx/sites-enabled/default
+        src: /etc/nginx/sites-available/default
+        state: link
+```
