@@ -31,8 +31,10 @@ Vagrant.configure("2") do |config|
       config.vm.provider :virtualbox do |v|
         v.memory = opts[:ram]
         v.cpus = opts[:vcpu]
+        v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
       end
       config.vm.network :private_network, ip: opts[:ip]
+
       # config.vm.provision :file do |file|
       #    file.source     = './keys/vagrant'
       #    file.destination    = '/tmp/vagrant'

@@ -445,3 +445,42 @@ On arrive enfin au vif du sujet : l'installation d'Ansible !
 ```
 vagrant@ansible-host:~$
 ```
+
+Il existe plusieurs façons d'installer Ansible, ainsi que l'indique la section [Installing Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) de la documentation officielle.
+
+Nous allons suivre les instructions de la sous-section [Installing Ansible on Debian](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-debian).
+
+Elle repose sur l'utilisation de l'outil natif de gestion de paquets logiciels commun à Debian et Ubuntu : `apt`. Cette commande permet notamment d'installer des logiciels depuis des "depôts" publics.
+
+La première chose à faire est de passer sous le compte `root` :
+
+    sudo su -
+
+Ensuite, on doit mettre a jour la liste des paquets logiciels disponibles :
+
+    apt-get update
+    
+Puis installer le paquet `gnupg` (outil de chiffrement requis par l'une des commandes suivantes, `apt-key`) :
+
+    apt install -y gnupg
+
+Ensuite, il faut ajouter l'adresse du dépôt Ansible pour Ubuntu 20 `focal`, qui marche aussi pour Debian 11 `bullseye`, au fichier `/etc/apt/sources.list.d/ansible.list` :
+
+    echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu focal main" >> /etc/apt/sources.list.d/ansible.list
+
+Avec cette commande, on affiche la ligne de définition du dépôt avec `echo`, et on redirige cet affichage vers le fichier `/etc/apt/sources.list.d/ansible.list`, qui est créé s'il n'existait pas.
+
+Ensuite, on doit ajouter une clé permettant d'authentifier les paquets :
+
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
+
+Ensuite, on lance `apt-update`, qui permet d'aller chercher la liste des paquets disponibles dans le dépôt ajouté précédemment :
+
+    apt update
+
+Enfin, on installe Ansible (`-y` permet de passer l'étape de confirmation) :
+
+    apt install -y ansible
+
+Cette étape va prendre un peu de temps.
+
