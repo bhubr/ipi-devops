@@ -873,7 +873,7 @@ Cela permet d'ajouter un `#` dans les lignes incriminées de `/etc/apt/sources.l
 
 **Si tout se passe bien**, on va passer à la suite. Toujours dans le même dossier, lancez cette commande :
 
-    wget https://github.com/bhubr/ipi-devops/raw/master/sample-playbooks/nginx/nginx-files.tar
+    wget https://github.com/bhubr/ipi-devops/raw/master/sample-playbooks/nginx/nginx.tar
 
 Cela vous permet de récupérer une archive "tar" (le format d'archive natif d'Unix) contenant des fichiers supplémentaires pour nginx :
 
@@ -884,20 +884,19 @@ Qui vont remplacer ceux fournis par défaut avec nginx.
 
 Décompressez cette archive :
 
-    tar xvf nginx-files.tar
+    tar xvf nginx.tar
 
 Cela devrait afficher la liste des fichiers :
 
 ```
-files/
+files/._nginx.conf
 files/nginx.conf
-templates/
 templates/index.html
 ```
 
-(le fichier `files/._nginx-default.conf` ne sert à rien et a été ajouté automatiquement par mon Mac !)
+(le fichier `files/._nginx.conf` ne sert à rien et a été ajouté automatiquement par mon Mac !)
 
-Ensuite, éditez à nouveau le fichier du playbook nginx : `nano nginx-debian.yaml`.
+Ensuite, éditez à nouveau le fichier du playbook nginx : `nano debian-nginx.yaml`.
 
 Ajoutez, sous la tâche "install nginx", les deux tâches suivantes :
 
@@ -912,3 +911,114 @@ Ajoutez, sous la tâche "install nginx", les deux tâches suivantes :
         src: /etc/nginx/sites-available/default
         state: link
 ```
+
+Puis rejouez le playbook : `ansible-playbook debian-nginx.yaml`
+
+Sortie attendue (à ceci près que vous n'aurez pas la tâche "[disable bullseye-updates and bullseye-backports") :
+
+```
+vagrant@ansible-host:~$ ansible-playbook debian-nginx.yaml 
+
+PLAY [Configure webserver with nginx] ***************************************************************************************
+
+TASK [Gathering Facts] ******************************************************************************************************
+ok: [192.168.56.2]
+
+TASK [disable bullseye-updates and bullseye-backports] **********************************************************************
+ok: [192.168.56.2]
+
+TASK [install nginx] ********************************************************************************************************
+ok: [192.168.56.2]
+
+TASK [copy nginx config file] ***********************************************************************************************
+changed: [192.168.56.2]
+
+TASK [enable configuration] *************************************************************************************************
+ok: [192.168.56.2]
+
+PLAY RECAP ******************************************************************************************************************
+192.168.56.2               : ok=5    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+```
+
+Éditez encore (une dernière fois) `debian-nginx.yaml` et ajoutez ces deux tâches à la fin (attention, ici on a fait une petite modif par rapport à l'original du tutoriel) :
+
+```
+    - name: copy index.html
+      template:
+        src: templates/index.html
+        dest: /usr/share/nginx/html/index.html
+        mode: 0644
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
+```
+
+Rejouez le playbook :
+
+```
+vagrant@ansible-host:~$ ansible-playbook debian-nginx.yaml 
+
+PLAY [Configure webserver with nginx] ***************************************************************************************
+
+TASK [Gathering Facts] ******************************************************************************************************
+ok: [192.168.56.2]
+
+TASK [disable bullseye-updates and bullseye-backports] **********************************************************************
+ok: [192.168.56.2]
+
+TASK [install nginx] ********************************************************************************************************
+ok: [192.168.56.2]
+
+TASK [copy nginx config file] ***********************************************************************************************
+ok: [192.168.56.2]
+
+TASK [enable configuration] *************************************************************************************************
+ok: [192.168.56.2]
+
+TASK [copy index.html] ******************************************************************************************************
+changed: [192.168.56.2]
+
+TASK [restart nginx] ********************************************************************************************************
+changed: [192.168.56.2]
+
+PLAY RECAP ******************************************************************************************************************
+192.168.56.2               : ok=7    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+```
+
+On peut noter que les tâches déjà exécutées lors de l'exécution précédente ne provoquent cette fois pas de changement.
+
+#### Requêter notre serveur web
+
+Il va vous falloir installer `curl` sur l'`ansible-host` :
+
+    sudo su -
+    apt install -y curl
+    logout
+
+Puis vous pouvez interroger le serveur via son IP :
+
+    curl http://192.168.56.10
+
+Vous devriez voir s'afficher :
+
+```
+vagrant@ansible-host:~$ curl http://192.168.56.10
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nginx on Debian</title>
+</head>
+<body>
+  <h1>It works!</h1>
+  <p>This is <code>index.html</code>, served by Nginx.</p>
+</body>
+</html>vagrant@ansible-host:~$ 
+```
+
+C'est le contenu du fichier `index.html` qui remplace celui livré par défaut avec Nginx.
