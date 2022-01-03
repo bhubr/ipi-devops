@@ -837,7 +837,7 @@ On ne va prendre (copier dans le presse-papier) que les lignes jusqu'à la premi
 * Editer un nouveau fichier : `nano debian-nginx.yaml`
 * Y coller le bloc ci-dessus
 
-Puis exécuter le playbook : `ansible debian-nginx.yaml`
+Puis exécuter le playbook : `ansible-playbook debian-nginx.yaml`
 
 Il est _possible_ de rencontrer une erreur à ce stade, ce qui a été mon cas !
 
