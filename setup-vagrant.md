@@ -36,12 +36,12 @@ Vagrant permet de configurer très facilement des machines virtuelles, à partir
 
 Vagrant repose par défaut sur VirtualBox, mais offre, entre autres avantages, la simplicité et rapidité de mise en oeuvre : au lieu de devoir installer soi-même un OS dans une VM, on peut démarrer une VM à partir d'une "box" pré-configurée, téléchargée automatiquement par Vagrant depuis un dépôt central.
 
-### Installation et configuration de Vagrant
+## Installation et configuration de Vagrant
 
 * Télécharger la version **64-bit** depuis [la page officielle de téléchargements](https://www.vagrantup.com/downloads)
 * Lancer l'installeur (5 étapes, garder les choix proposés par défaut)
 
-## Premier test de Vagrant
+### Premier test de Vagrant
 
 Juste pour verifier que tout fonctionne correctement !
 
@@ -239,7 +239,7 @@ On doit voir apparaître un prompt (invite de commandes) ressemblant à ceci :
 
 On peut se déconnecter (`logout`), puis effectuer la même opération pour la VM faisant office de serveur contrôlé par Ansible : `vagrant ssh managed-host1` (puis `logout` une fois qu'on a vérifié que cela fonctionnait).
 
-### Configuration des VMs
+## Configuration des VMs
 
 `vagrant ssh` permet de se connecter de notre système hôte (la machine Windows) vers les systèmes "invités" (les VMs).
 
@@ -247,7 +247,7 @@ On peut se déconnecter (`logout`), puis effectuer la même opération pour la V
 
 Gardez juste en tête que `vagrant ssh` est spécifique à ce "setup" basé sur Vagrant. Ceci dit, nous allons quand même utiliser `ssh` pour permettre au _control node_ Ansible de se connecter au(x) _managed node(s)_ (ici un seul).
 
-#### Tentative de connexion du _control node_ au _managed node_
+### Tentative de connexion du _control node_ au _managed node_
 
 Dans le `Vagrantfile` qui a servi à initialiser les 2 VMs, on a attribué une adresse IP statique à chacune des VMs, qui sont sur le même réseau LAN "interne" :
 
@@ -271,7 +271,7 @@ SSH repose sur le chiffrement asymétrique. C'est un sujet assez complexe et qui
 
 N'ayant pas pour l'instant de paire de clés, on ne peut pour l'instant pas se connecter du _control node_ au _managed node_.
 
-#### Génération d'une paire de clés SSH
+### Génération d'une paire de clés SSH
 
 On va générer une paire de clés SSH, depuis le _control node_, via la commande `ssh-keygen`.
 
@@ -346,7 +346,7 @@ Problème : en l'état actuel, on ne peut pas se connecter en SSH, ainsi qu'on l
 
 Quittez la VM en saisissant `logout`.
 
-#### Installer le plugin `vagrant-scp`
+### Transferer la clé publique
 
 À nouveau, cette étape est un peu spécifique au setup basé sur Vagrant.
 
@@ -409,7 +409,7 @@ ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBBSkxnUn
 
 La clé a bien été ajoutée ! Quittez la session SSH via `logout`.
 
-#### Retour au _control node_
+### Retour au _control node_
 
 Connexion au control node :
 
@@ -435,6 +435,14 @@ Last login: Mon Jan  3 00:20:27 2022 from 10.0.2.2
 ```
 
 Quittez avec `logout` (raccourci : `Ctrl-D`) pour revenir au control node.
+
+## Ansible
+
+**Important** : Ansible ne doit être installé _que_ sur le control node. Sur les hôtes contrôlés par Ansible, il n'y a rien à installer !
+
+C'est un des points forts d'Ansible, comparé à d'autres outils qui nécessitent l'installation d'un "agent" sur les machines contrôlées.
+
+Ansible est "agentless" : il a juste besoin de pouvoir accéder aux noeuds contrôlés via SSH. 
 
 ### Installation d'Ansible sur le control node
 
@@ -484,3 +492,54 @@ Enfin, on installe Ansible (`-y` permet de passer l'étape de confirmation) :
 
 Cette étape va prendre un peu de temps.
 
+**Restez en `root` pour l'étape suivante** (il ne faudra pas oublier d'en ressortir quand on aura terminé toute la configuration).
+
+### Configuration des hôtes
+
+On doit maintenant indiquer à Ansible la liste des hôtes qu'il contrôle. Par défaut, c'est dans le fichier `/etc/ansible/hosts` qu'on les référence. 
+
+Les hôtes peuvent être rassemblés dans des groupes. Ici, on aura juste un groupe (`webservers`) qui contiendra la machine à contrôler, qu'on indiquera via son adresse IP.
+
+Lancez l'éditeur `nano` pour éditer le fichier d'hôtes :
+
+    nano /etc/ansible/hosts
+
+Son contenu par défaut est celui indiqué ci-dessous. Toutes les lignes sont précédées du `#` (commentaires).
+
+Décommentez la ligne `## [webservers]`, en enlevant les deux `#` **et l'espace qui les suit**.
+
+Sous cette ligne, insérez l'adresse IP de l'hôte à contrôler :
+
+```
+192.168.29.2
+```
+
+Sauvegardez le fichier avec le raccourci Ctrl-O. **Observez bien le bas de l'écran**, où on vous propose d'indiquer le nom du fichier à écrire :
+
+    File Name to Write: /etc/ansible/hosts 
+
+Vous n'avez ici **qu'à valider le choix proposé avec entrée**.
+
+Puis utilisez le raccourci Ctrl-X pour quitter `nano`.
+
+**Enfin**, quittez le mode `root` via Ctrl-D ou la commande `logout`.
+
+### Tester le bon fonctionnement d'Ansible
+
+On va enfin pouvoir exécuter nos premières commandes Ansible. Commencez par celle-ci :
+
+    ansible all -m ping
+
+Elle devrait, si tout va bien, se solder par l'affichage suivant :
+
+```
+192.168.29.2 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+```
+
+Quelques explictions s'imposent !
