@@ -734,3 +734,50 @@ Cette fois, le résultat est différent :
 
 La commande a réussi, mais n'a appliqué aucun changement sur le système cible, `curl` ayant déjà installé par l'invocation précédente.
 
+### Playbooks
+
+Voir la section [Intro to playbooks](https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html) de la documentation officielle pour référence.
+
+Les playbooks Ansible permettent de spécifier des tâches à exécuter sur différentes machines. Dès lors qu'on souhaite exécuter une certaine tâche plus d'une fois, il est préférable de recourir aux playbooks.
+
+Un playbook est un fichier au format YAML, qui peut (et doit) être géré via un outil de gestion de versions tel que Git.
+
+Ainsi, une fois écrit, le playbook pourra être réutilisé.
+
+#### Un exemple simple
+
+Voici un playbook très simple, qui va effectuer la même chose que ce qu'on avait fait précédemment avec une commande ad hoc, pour installer `curl`.
+
+```yaml
+---
+- name: Install curl
+  hosts: webservers
+
+  tasks:
+  - name: Ensure curl is at the latest version
+    ansible.builtin.apt:
+      name: curl
+      state: latest
+    become: yes
+```
+
+Ce playbook définit une seule tâche, qui comporte :
+
+* un nom (`name`)
+* un module (`ansible.builtin.apt`) et des paramètres associés
+* Le paramètre `become` positionné sur `yes`, indiquant qu'il faut obtenir les privilèges `root` afin d'exécuter la commande
+
+#### La syntaxe YAML
+
+Avant d'aller plus loin, il peut être intéressant de se familiariser avec la syntaxe YAML. D'autant plus qu'elle n'est pas spécifique à Ansible, loin de là !
+
+On l'utilise également :
+
+* Dans le monde du DevOps, pour configurer des outils tels que Docker Compose ou Kubernetes
+* Pour d'autres outils, tels que Jekyll (générateur de site statique à partir de fichiers Markdown, dont l'en-tête est au format YAML)
+
+Quelques ressources (choisissez le format qui vous convient le mieux) :
+
+* La section [YAML Syntax](https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html#yaml-syntax) de la doc Ansible
+* [Introduction à YAML](https://sweetohm.net/article/introduction-yaml.html) en français, mais avec des exemples de manipulation du format YAML en Python, pour les téméraires !
+* [YAML Tutorial | Learn YAML in 18 mins](https://www.youtube.com/watch?v=1uFVr15xDGg) vidéo en anglais (d'une autrice qui propose énormément de contenus très qualitatifs sur le DevOps)
