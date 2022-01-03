@@ -542,4 +542,12 @@ Elle devrait, si tout va bien, se solder par l'affichage suivant :
 }
 ```
 
-Quelques explictions s'imposent !
+Quelques explictions s'imposent ! D'abord, l'anatomie de la commande `ansible all -m ping` :
+
+`all` permet de lancer une commande sur _tous_ les hôtes référencés dans le fichier `/etc/ansible/hosts`. On aurait pu spécifier `webservers` au lieu de `all`. Essayez !
+
+Vous constaterez que cela ne change rien, et c'est normal, car on n'a qu'un seul hôte contrôlé (choix assez prudent de ma part, je crains les limites en termes de RAM des ordinateurs de certain.e.s d'entre vous !).
+
+`-m` permet de spécifier un "module". Ici `ping`. Un module est un genre de "plugin" qui contient des fonctionnalités. C'est une sorte de script qui va être exécuté sur les machines contrôlées, et va renvoyer des informations sous la forme d'une chaîne JSON.
+
+Le module `ping` ne doit pas être confondu avec la commande `ping` du même nom (laquelle permet de vérifier qu'on peut joindre un certain hôte sur le réseau). Elle en est cependant l'équivalent dans Ansible : elle essaie de se connecter à l'hôte, vérifie que Python est installé et utilisable, et retourne `pong` si tout s'est bien passé.
