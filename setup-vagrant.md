@@ -232,12 +232,26 @@ Comme on dispose maintenant de deux VMs, il va cette fois falloir spécifier sur
 Commençons par nous connecter sur la VM faisant office de contrôleur Ansible : 
 
     vagrant ssh ansible-host
-    
+
 On doit voir apparaître un prompt (invite de commandes) ressemblant à ceci :
 
     vagrant@ansible-host: $
 
-On peut se déconnecter (`logout`), puis effectuer la même opération pour la VM faisant office de serveur contrôlé par Ansible : `vagrant ssh managed-host1` (puis `logout` une fois qu'on a vérifié que cela fonctionnait).
+Enfin, testons l'accès à Internet :
+
+    ping google.fr
+
+On doit voir s'afficher des séquences d'échange indiquant le temps mis pour la requête à faire l'aller retour :
+
+    vagrant@ansible-host:~$ ping google.fr
+    PING google.fr (142.251.37.163) 56(84) bytes of data.
+    64 bytes from mrs09s14-in-f3.1e100.net (142.251.37.163): icmp_seq=1 ttl=116 time=9.00 ms
+    64 bytes from mrs09s14-in-f3.1e100.net (142.251.37.163): icmp_seq=2 ttl=116 time=7.94 ms
+    64 bytes from mrs09s14-in-f3.1e100.net (142.251.37.163): icmp_seq=3 ttl=116 time=8.95 ms
+
+Dans le cas contraire, rien ne s'affiche sous la ligne `PING`.
+
+On peut se déconnecter (`logout`), puis effectuer la même opération pour la VM faisant office de serveur contrôlé par Ansible : `vagrant ssh managed-host1`. De même, testons l'accès à Internet : `ping google.fr`. Puis `logout` une fois qu'on a vérifié que cela fonctionnait.
 
 ## Configuration des VMs
 
@@ -336,7 +350,7 @@ Profitons-en pour expliquer le rôle des deux autres fichiers :
 * `known_hosts` permet de stocker les "empreintes" des serveurs auxquels on se connecte, et de vérifier qu'elles n'ont pas changé lors de connexions ultérieures (ce qui indiquerait vraisemblablement une attaque).
 * `authorized_keys` est l'endroit où on va stocker les clés publiques qu'on veut autoriser à se connecter sous ce compte utilisateur.
 
-**La prochaine étape** va être de copier la clé publique (`id_ecdsa.pub`) vers le fichier `authorized_keys` de la machine sur laquelle on veut se connecter&hellip; ce qu'on ferait normalement via la commande `ssh-copy-id`, de cette façon (on indique en dernier l'IP ou le nom d'hôte de la machine cible, éventuellement précédé d'un nom d'utilisateur séparé de l'IP par un `@`) :
+**La prochaine étape** va être de copier la clé publique (`id_ecdsa.pub`) vers le fichier `authorized_keys` de la machine sur laquelle on veut se connecter&hellip; ce qu'on ferait normalement via la commande `ssh-copy-id`, de cette façon (on indique en dernier l'IP ou le nom d'hôte de la machine cible, éventuellement précédé d'un nom d'utilisateur séparé de l'IP par un `@`). Cette commande est un **exemple**, ne la lancez pas !
 
 ```
 ssh-copy-id -i ~/.ssh/id_ecdsa.pub someuser@192.168.56.10
@@ -482,9 +496,9 @@ Ensuite, on doit ajouter une clé permettant d'authentifier les paquets :
 
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
 
-Ensuite, on lance `apt-update`, qui permet d'aller chercher la liste des paquets disponibles dans le dépôt ajouté précédemment :
+Ensuite, on lance à nouveau `apt-get update`, qui permet d'aller chercher la liste des paquets disponibles dans le dépôt ajouté précédemment :
 
-    apt update
+    apt-get update
 
 Enfin, on installe Ansible (`-y` permet de passer l'étape de confirmation) :
 
@@ -511,6 +525,13 @@ Décommentez la ligne `## [webservers]`, en enlevant les deux `#` **et l'espace 
 Sous cette ligne, insérez l'adresse IP de l'hôte à contrôler :
 
 ```
+192.168.56.10
+```
+
+Vous devez donc avoir ces deux lignes consécutives :
+
+```
+[webservers]
 192.168.56.10
 ```
 
