@@ -767,6 +767,35 @@ Ce playbook définit une seule tâche, qui comporte :
 * un module (`ansible.builtin.apt`) et des paramètres associés
 * Le paramètre `become` positionné sur `yes`, indiquant qu'il faut obtenir les privilèges `root` afin d'exécuter la commande
 
+Copiez le bloc de configuration ci-dessus. Dans la fenêtre de PowerShell, toujours connectée sur `ansible-host`, lancez :
+
+    nano playbook-curl.yaml
+
+Puis collez le contenu copié, sauvegardez (Ctrl-O puis entrée), et quittez (Ctrl-X).
+
+Enfin, exécutez le playbook en utilisant la commande `ansible-playbook`, suivi du nom du playbook :
+
+    ansible-playbook playbook-curl.yaml
+
+Celle-ci produit l'affichage suivant :
+
+```
+
+PLAY [Install curl] ***********************************************************************************************
+
+TASK [Gathering Facts] ********************************************************************************************
+ok: [192.168.56.10]
+
+TASK [Ensure curl is at the latest version] ***********************************************************************
+ok: [192.168.56.10]
+
+PLAY RECAP ********************************************************************************************************
+192.168.56.10              : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
+```
+
+Entre autres choses, on peut noter, à la fin, `changed=0`, ce qui signifie que le playbook n'a effectué aucun changement (`curl` étant déjà installé sur l'hôte cible).
+
 #### La syntaxe YAML
 
 Avant d'aller plus loin, il peut être intéressant de se familiariser avec la syntaxe YAML. D'autant plus qu'elle n'est pas spécifique à Ansible, loin de là !
