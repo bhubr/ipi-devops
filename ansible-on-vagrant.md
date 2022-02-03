@@ -1022,3 +1022,106 @@ vagrant@ansible-host:~$ curl http://192.168.56.10
 ```
 
 C'est le contenu du fichier `index.html` qui remplace celui livré par défaut avec Nginx.
+
+#### Playbook pour installer NodeJS
+
+Créer un dossier `nodejs` et s'y placer :
+
+```
+mkdir nodejs
+cd nodejs
+```
+
+Editer un nouveau playbook : `nano debian-nodejs.yaml` avec ce contenu :
+
+```
+---
+- name: Configure webserver with nginx
+  hosts: webservers
+  become: True
+  become_method: sudo
+  vars:
+    node_apps_location: /usr/local/opt/node
+  tasks:
+     - name: install nodejs
+       apt:
+         name: nodejs
+         update_cache: yes
+```
+
+Ce fichier introduit une nouvelle notion, celle de variables (qu'on va utiliser un peu plus loin).
+
+Exécuter le playbook : `ansible-playbook debian-nodejs.yaml`
+
+Créer un nouveau sous-dossier `app` :
+
+```
+mkdir app
+```
+
+Editer un fichier contenant une app Node.js/Express : `nano app/index.js` avec ce contenu (récupéré du "Getting Started" de la doc ExpressJS) :
+
+```javascript
+const express = require('express')
+const app = express()
+const port = 3000
+
+app.get('/', (req, res) => {
+  res.send('Hello World!')
+})
+
+app.listen(port, () => {
+  console.log(`Example app listening at http://localhost:${port}`)
+})
+
+```
+
+Editer le `package.json` pour cette app : `nano app/package.json, avec ce contenu :
+
+```json
+{
+  "name": "Express app",
+  "dependencies": {
+    "express": "^4.17.0"
+  }
+}
+```
+
+Ajouter ce bloc de tâches à la fin de `debian-nodejs.yaml`, récupéré depuis le tutoriel [Déployer un serveur Node.js sur CentOS](https://iac.goffinet.org/ansible-linux/deployer-un-serveur-nodejs-centos/) :
+
+```
+    - name: Ensure Node.js app folder exists.
+      file:
+        path: "{{ node_apps_location }}"
+        state: directory
+    - name: Copy example Node.js app to server.
+      copy:
+        src: app
+        dest: "{{ node_apps_location }}"
+    - name: Install app dependencies defined in package.json.
+      npm:
+        path: "{{ node_apps_location }}/app"
+```
+
+Ces trois nouvelles tâches permettent :
+
+* De vérifier si le dossier `/usr/local/opt/node` (valeur de la variable `node_apps_location`) existe, et de le créer si nécessaire
+* De copier tout le dossier `app` vers ce dossier
+* D'installer les dépendances avec NPM, en se plaçant dans ce dossier
+
+Relancer le playbook : `ansible-playbook debian-nodejs.yaml`
+
+* ajouter package.json
+* installer npm (transformer valeur derrière name en tableau)
+* Façon naive de lancer node
+
+    - name: Start example Node.js app.
+      command: "node {{ node_apps_location }}/app/index.j>
+
+marche pas : voir post stack overflow 
+--> tentative avec forever (marche pas non plus, probablement deprecation de forever_list)
+--> marche avec pm2 (suppression avant relancement)
+--> `curl http://192.168.56.10:3000/` à la fin
+
+Attention le pm2 delete plante, que ce soit `pm2 delete node-app` ou `pm2 delete all`
+
