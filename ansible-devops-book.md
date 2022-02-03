@@ -27,6 +27,25 @@ Vérifier la sync des serveurs avec le time server :
 
 > :warning: Les serveurs ne sont pas sync (20 sec entre 4 et 6, idem entre 6 et 5, 40 sec entre 4 et 5)
 
+
+### Config serveurs app
+
+    ansible app -b -m apt -a "name=python3-pip state=present"
+
+FAIL !
+
+**IDEM CI-DESSOUS**. Essayons une update ([doc module apt](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html))
+
+    ansible app -b -m apt -a "update_cache=yes"
+
+Django :
+
+    ansible app -b -m pip -a "name=django<4 state=present"
+
+Test run Django :
+
+    ansible app -a "python3 -m django --version"
+
 ### Config serveur DB
 
 #### Install MariaDB et activation du service
@@ -93,7 +112,3 @@ RESOLU
 
     ansible db -b -m mysql_user -a "login_unix_socket=/var/run/mysqld/mysqld.sock name=django host=% password=12345 priv=*.*:ALL state=present"
 
-
-Test avec pass plus fort
-
-    ansible db -b -m mysql_user -a "name=django host=% password=LQSyM9753A priv=*.*:ALL state=present"
