@@ -29,6 +29,8 @@ Vérifier la sync des serveurs avec le time server :
 
 ### Config serveur DB
 
+#### Install MariaDB et activation du service
+
     ansible db -b -m apt -a "name=mariadb-server state=present"
 
 FAIL !
@@ -43,4 +45,39 @@ Essayons une update ([doc module apt](https://docs.ansible.com/ansible/latest/co
 
     ansible db -b -m apt -a "update_cache=yes"
 
-On relance `ansible db -b -m apt -a "name=mariadb-server state=present"` &rarr; SUCCESS :party:
+On relance `ansible db -b -m apt -a "name=mariadb-server state=present"` &rarr; SUCCESS :fire:
+
+Lancer service :
+
+    ansible db -b -m service -a "name=mariadb state=started enabled=yes"
+
+#### Config firewall
+
+Installer et activer le service :
+
+    ansible db -b -m apt -a "name=firewalld state=present"
+    ansible db -b -m service -a "name=firewalld state=started enabled=yes"
+
+Config firewall :
+
+
+Vu que je ne connais pas firewalld : [firewalld basics](https://www.putorius.net/introduction-to-firewalld-basics.html#listing-all-zones-in-firewalld), où il est écrit "Firewalld is basically just a wrapper for iptables". 
+
+Avant de créer (?) la zone `database`, on fait `vagrant ssh db` puis (_listing all zones in firewalld_) `firewall-cmd --get-zones`, qui donne :
+
+    vagrant@orc-db:~$ firewall-cmd --get-zones
+    block dmz drop external home internal public trusted work
+
+On lance alors
+
+    ansible db -b -m firewalld -a "zone=database state=present permanent=yes"
+
+Si on relance `firewall-cmd --get-zones`, on ne voit aucun changement :/.
+
+Autorisations :
+
+    ansible db -b -m firewalld -a "source=192.168.60.0/24 zone=database state=enabled permanent=yes"
+    ansible db -b -m firewalld -a "port=3306/tcp zone=database state=enabled permanent=yes"
+
+#### Install dépendances Python
+
