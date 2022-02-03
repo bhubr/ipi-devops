@@ -1,0 +1,62 @@
+---
+- name: Configure webserver with nginx and nodejs
+  hosts: webservers
+  become: True
+  become_method: sudo
+  vars:
+    node_apps_location: /usr/local/opt/node
+  tasks:
+#    - name: disable bullseye-updates and bullseye-backports
+#      replace:
+#        path: /etc/apt/sources.list
+#        regexp: '^deb(-src)? (.*) bullseye-(updates|backports) main'
+#        replace: '#deb\1 \2 bullseye-\3 main'
+    - name: install nginx
+      apt:
+        name: nginx
+        update_cache: yes
+    - name: copy nginx config file
+      copy:
+        src: files/nginx.conf
+        dest: /etc/nginx/sites-available/default
+    - name: enable configuration
+      file:
+        dest: /etc/nginx/sites-enabled/default
+        src: /etc/nginx/sites-available/default
+        state: link
+#    - name: copy index.html
+#      template:
+#        src: templates/index.html
+#        dest: /usr/share/nginx/html/index.html
+#        mode: 0644
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
+    - name: install nodejs and npm
+      apt:
+        name:
+          - nodejs
+          - npm
+        update_cache: yes
+    - name: Install PM2 (to run our Node.js app).
+      npm:
+        name: pm2
+        global: yes
+        state: present
+    - name: Ensure Node.js app folder exists.
+      file:
+        path: "{{ node_apps_location }}"
+        state: directory
+    - name: Copy example Node.js app to server.
+      copy:
+        src: app
+        dest: "{{ node_apps_location }}"
+    - name: Install app dependencies defined in package.json.
+      npm:
+        path: "{{ node_apps_location }}/app"
+    - name: Delete old pm2 process
+      command: pm2 delete all
+      ignore_errors: yes
+    - name: Start example Node.js app.
+      command: "pm2 start {{ node_apps_location }}/app/index.js --name node-app"
