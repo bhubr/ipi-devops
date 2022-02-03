@@ -81,3 +81,19 @@ Autorisations :
 
 #### Install dépendances Python
 
+Install PyMySQL
+
+    ansible db -b -m apt -a "name=python3-pymysql state=present"
+
+Création user MySQL &rarr; FAIL au 1er coup car ... access denied pour root !
+
+    ansible db -b -m mysql_user -a "name=django host=% password=12345 priv=*.*:ALL state=present"
+
+RESOLU
+
+    ansible db -b -m mysql_user -a "login_unix_socket=/var/run/mysqld/mysqld.sock name=django host=% password=12345 priv=*.*:ALL state=present"
+
+
+Test avec pass plus fort
+
+    ansible db -b -m mysql_user -a "name=django host=% password=LQSyM9753A priv=*.*:ALL state=present"
