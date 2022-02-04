@@ -51,6 +51,8 @@ Une approche possible est d'utiliser des _scripts shell_ pour automatiser, dans 
 
 Ansible va permettre de répondre à cette problématique d'automatisation, de façon fiable et efficace.
 
+> Gardez à l'esprit qu'Ansible n'est pas le seul outil permettant de répondre à cette problématique. Des outils tels que Docker offrent une autre approche. Il ne s'agit cependant pas de les opposer, car ils peuvent être complémentaires.
+
 ### Qu'est-ce qu'Ansible ?
 
 Ansible est un outil permettant d'automatiser toutes sortes de tâches sur des serveurs.
