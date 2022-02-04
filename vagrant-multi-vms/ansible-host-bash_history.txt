@@ -1,0 +1,174 @@
+ping www.google.fr
+cd nginx/
+ls
+ssh 192.168.56.10
+ip route
+ssh 192.168.56.2
+ssh-keygen -t ecdsa
+ls
+cat debian-nginx.yaml 
+ssh 192.168.56.2
+sudo su -
+ls
+cd nginx/
+ansible-playbook debian-nginx.yaml 
+sudo su -
+ansible-playbook debian-nginx.yaml 
+ssh 192.168.56.2
+vim debian-nginx.yaml 
+nano debian-nginx.yaml 
+ansible-playbook debian-nginx.yaml 
+nano debian-nginx.yaml 
+ansible-playbook debian-nginx.yaml 
+ssh 192.168.56.2
+cd
+ls
+mkdir tmp
+mv nginx/ debian-nginx.old.yaml tmp/
+wget https://github.com/bhubr/ipi-devops/raw/master/sample-playbooks/nginx/nginx-files.tar
+tar xvf nginx-files.tar
+date
+sudo su -
+ls
+rm -rf files/ templates/
+tar xvf nginx-files.tar
+rm -rf files/ templates/
+wget https://github.com/bhubr/ipi-devops/raw/master/sample-playbooks/nginx/nginx-files.tar
+rm nginx-files.tar*
+wget https://github.com/bhubr/ipi-devops/raw/master/sample-playbooks/nginx/nginx-files.tar
+tar xvf nginx-files.tar
+rm nginx-files.tar 
+rm -rf files/ templates/
+wget https://github.com/bhubr/ipi-devops/raw/master/sample-playbooks/nginx/nginx-files.tar
+tar tvf nginx-files.tar 
+rm nginx-files.tar && wget --no-cache https://github.com/bhubr/ipi-devops/raw/master/sample-playbooks/nginx/nginx-files.tar
+tar xvf nginx-files.tar 
+rm nginx-files.tar 
+wget https://github.com/bhubr/ipi-devops/raw/master/sample-playbooks/nginx/nginx.tar
+tar xvf nginx.tar 
+nano debian-nginx.yaml 
+ansible-playbook debian-nginx.yaml 
+nano debian-nginx.yaml 
+ansible-playbook debian-nginx.yaml 
+nano debian-nginx.yaml 
+ansible-playbook debian-nginx.yaml 
+curl http://192.168.56.2
+wget http://192.168.56.2
+cat index.html 
+sudo su -
+curl http://192.168.56.2
+ls
+cat debian-nginx.yaml 
+cp -R nodejs/ nodejs-nginx
+ls
+cp -R files/ templates/ nodejs-nginx/
+cd nodejs-nginx/
+rm .debian-nodejs.yaml.swp 
+mv debian-nodejs.yaml nodejs-nginx.yaml
+nano nodejs-nginx.yaml 
+nano files/nginx.conf 
+ansible-playbook nodejs-nginx.yaml 
+curl http://192.168.56.2
+ls 
+cd ..
+cp -R nodejs-nginx/ nodejs-mongoose-nginx
+cd nodejs-mongoose-nginx/
+ls
+nano app/index.js 
+cd ..
+ansible-playbook debian-nginx.yaml 
+curl http://192.168.56.2
+curl http://192.168.56.2:3000
+mv nodejs-mongoose-nginx/ nodejs-nginx/ /tmp/
+ls
+mv debian-nginx.yaml debian-nginx.old.yaml
+nano debian-nginx.yaml
+cat /etc/ansible/hosts
+nano debian-nginx.yaml
+ansible-playbook debian-nginx.yaml
+ssh 192.168.56.2
+nano debian-nginx.yaml
+ansible-playbook debian-nginx.yaml 
+cat debian-nginx.
+cat debian-nginx.yaml 
+ssh 192.168.56.2
+nano debian-nginx.yaml 
+ssh 192.168.56.2
+nano debian-nginx.yaml 
+ansible-playbook debian-nginx.yaml 
+nano debian-nginx.yaml 
+ansible-playbook debian-nginx.yaml 
+cat debian-nginx.yaml 
+nano debian-nodejs.yaml
+mkdir nodejs
+mv debian-nodejs.yaml nodejs/
+cd nodejs/
+ls
+mkdir app
+nano app/index.js
+nano debian-nodejs.yaml 
+cd ..
+cd playbook-nodejs-nginx/
+ls
+nano files/nginx.conf 
+ls
+mv debian-nodejs.yaml nodejs-nginx.yaml
+rm debian-nginx.yaml
+ls
+ansible-playbook nodejs-nginx.yaml 
+ls
+ansible-playbook debian-nodejs.yaml 
+cd nodejs/
+nano app/package.json
+ansible-playbook debian-nodejs.yaml 
+ssh 192.168.56.2
+ansible-playbook debian-nodejs.yaml 
+ssh 192.168.56.2
+ansible-playbook debian-nodejs.yaml 
+cat app/package.json 
+ansible-playbook debian-nodejs.yaml 
+ssh 192.168.56.2
+ansible-playbook debian-nodejs.yaml 
+curl http://192.168.56.2/
+curl http://192.168.56.2:3000/
+ssh 192.168.56.10
+ssh 192.168.56.2
+ansible-playbook debian-nodejs.yaml 
+ssh 192.168.56.2
+ansible-playbook debian-nodejs.yaml 
+curl http://192.168.56.2:3000/
+curl http://192.168.56.2
+cd
+mkdir playbook-nodejs-nginx
+ls
+rm index.html 
+ls
+wget http://192.168.56.2
+cat index.html 
+rm index.html 
+ls
+cp -R nodejs/* playbook-nodejs-nginx/
+ls files/
+rm files/nginx-default.conf 
+cp -R files/ playbook-nodejs-nginx/
+cp debian-nginx.yaml playbook-nodejs-nginx/
+cd playbook-nodejs-nginx/
+ls
+cat files/nginx.conf 
+cat debian-nginx.yaml 
+nano debian-nodejs.yaml 
+curl http://192.168.56.2
+tail -n 15 .bash_history 
+ls
+ls -ltrh
+ls -l files
+tree
+sudo apt install tree
+tree
+cat playbook-nodejs-nginx/nodejs-nginx.yaml 
+tree
+git
+git clone git@github.com:bhubr/ipi-devops.git
+sudo apt install -y git
+ls
+git clone git@github.com:bhubr/ipi-devops.git
