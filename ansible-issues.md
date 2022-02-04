@@ -61,3 +61,9 @@ usermod -aG sudo johndoe
 ## `Missing sudo password`
 
 Après avoir installé `sudo`, un autre problème&hellip;
+
+Plusieurs solutions sont proposées dans ce post : [Missing sudo password in Ansible](https://stackoverflow.com/q/25582740).
+
+* Éditer `/etc/sudoers`
+* Passer `-K` (`--ask-become-pass`) à l'invocation d'`ansible-playbook`
+
