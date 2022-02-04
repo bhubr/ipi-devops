@@ -353,6 +353,8 @@ N'ayant pas pour l'instant de paire de clés, on ne peut pour l'instant pas se c
 
 ### Génération d'une paire de clés SSH
 
+> :warning: Section qui sera revue suite aux problèmes rencontré.e.s par certain.e.s ave Vagrant : en effet, une partie est commune à Vagrant et Virtualbox, une partie est spécifique à Vagrant.
+
 On va générer une paire de clés SSH, depuis le _control node_, via la commande `ssh-keygen`.
 
 L'un de ses nombreux arguments acceptés par cette commande est le type de clé (algorithme utilisé), via `-t` suivi d'un type. Entre autres types possibles : `dsa`, `rsa` (plutôt obsolètes désormais), `ecdsa`, etc.
@@ -374,7 +376,7 @@ On nous demande ensuite une "passphrase" :
 
 Par souci de simplicité, on va valider avec entrée **deux fois** pour générer la paire de clés sans passphrase. Ce n'est pas sécurisé, mais cela simplifiera l'exercice.
 
-> Dans un environnement pro, on cherchera à augmenter le niveau de sécurité en spécifiant une passphrase : 15 caractères minimum, 20 de préférence. Des outils permettront d'éviter d'avoir à la saisir trop souvent.
+> Dans un environnement professionnel, on cherchera à augmenter le niveau de sécurité en spécifiant une passphrase : 15 caractères minimum, 20 de préférence, à stocker dans un gestionnaire de mots de passe. Des outils (`ssh-agent` et `ssh-add`) permettront d'éviter d'avoir à la saisir trop souvent.
 
 Après la validation de la passphrase vide, on obtient des informations sur l'emplacement des clés privée (`id_ecdsa`) et publique (`id_ecdsa.pub`), l'empreinte de la clé, et un "randomart" qui peut servir à valider la clé de façon visuelle (ce qu'on ne fera pas ici) :
 
@@ -576,7 +578,9 @@ Cette étape va prendre un peu de temps.
 
 ### Configuration des hôtes
 
-On doit maintenant indiquer à Ansible la liste des hôtes qu'il contrôle. Par défaut, c'est dans le fichier `/etc/ansible/hosts` qu'on les référence. 
+On doit maintenant indiquer à Ansible la liste des hôtes qu'il contrôle. Par défaut, c'est dans le fichier `/etc/ansible/hosts` qu'on les référence.
+
+> :warning: **Ajout** : il est plutôt recommandé, par certains, de créer des fichiers d'inventaire (_inventory_) par projet, afin d'y référencer les hôtes concernés par ce projet. L'approche que nous adoptons ici nous évitera d'avoir à spécifier un fichier d'inventaire à chaque lancement d'`ansible`.
 
 Les hôtes peuvent être rassemblés dans des groupes. Ici, on aura juste un groupe (`webservers`) qui contiendra la machine à contrôler, qu'on indiquera via son adresse IP.
 
