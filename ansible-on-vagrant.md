@@ -90,6 +90,8 @@ Il faut également télécharger une "image ISO" d'une distribution Linux (Debia
 
 Cette procédure est assez rapide quand on en a l'habitude, et une fois la première VM ainsi configurée, il est facile de la cloner pour éviter la duplication d'efforts. Cependant, il est tout aussi facile de faire une erreur au cours de la procédure, quand on débute !
 
+> :warning: **Ajout** : pour certain.e.s d'entre vous, Vagrant, décrit dans la section suivante, a posé des problèmes, aussi une alternative basée sur VirtualBox va vous être fournie.
+
 ### Vagrant
 
 Vagrant permet de configurer très facilement des machines virtuelles, à partir d'un fichier de configuration, le `Vagrantfile`.
@@ -186,6 +188,10 @@ or on a per folder basis within the Vagrantfile:
 ==> default:
 ==> default: Vanilla Debian box. See https://app.vagrantup.com/debian for help and bug reports
 ```
+
+> :warning: **Ajout** : il est de bon ton d'**éteindre** une VM après usage, et éventuellement (pour cette VM de test) de la supprimer.
+> * `vagrant halt` permet d'éteindre la VM
+> * `vagrant destroy` permet de la supprimer définitivement (**à manier avec précaution** si votre VM contient le fruit de plusieurs heures de travail 😅)
 
 ## Vagrantfile pour configurer plusieurs VMs
 
