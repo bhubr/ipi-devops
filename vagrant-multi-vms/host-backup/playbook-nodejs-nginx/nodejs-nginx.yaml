@@ -1,8 +1,7 @@
 ---
 - name: Configure webserver with nginx and nodejs
-  hosts: webservers
+  hosts: all
   become: True
-  become_method: sudo
   vars:
     node_apps_location: /usr/local/opt/node
   tasks:
@@ -11,6 +10,10 @@
 #        path: /etc/apt/sources.list
 #        regexp: '^deb(-src)? (.*) bullseye-(updates|backports) main'
 #        replace: '#deb\1 \2 bullseye-\3 main'
+    - name: install sudo
+      apt:
+        name: sudo
+        update_cache: yes
     - name: install nginx
       apt:
         name: nginx
@@ -55,8 +58,10 @@
     - name: Install app dependencies defined in package.json.
       npm:
         path: "{{ node_apps_location }}/app"
-    - name: Delete old pm2 process
-      command: pm2 delete all
-      ignore_errors: yes
-    - name: Start example Node.js app.
-      command: "pm2 start {{ node_apps_location }}/app/index.js --name node-app"
+    # - name: Delete old pm2 process
+    #   command: pm2 delete all
+    #   ignore_errors: yes
+    - name: Start example Express.js app.
+      command: "pm2 startOrReload {{ node_apps_location }}/app/ecosystem.config.js --env production"
+      args:
+        chdir: "{{ node_apps_location }}/app"
