@@ -1,6 +1,55 @@
-# Module DevOps / Introduction à Ansible
+# IMDW280/DevOps - Ansible
 
-## Introduction / Outils
+## Introduction
+
+### DevOps
+
+Le terme DevOps est issu de la contraction de _dev_ (_development_) et _ops_ (_operations_ = ce qui relève de l'administration système et réseau).
+
+C'est un terme aux multiples facettes, qui peut désigner :
+
+* Une philosophie, une approche, un mouvement, visant à faire évoluer la façon dont on développe et met en production des applications,
+* Un métier (_ingénieur DevOps_)
+
+Une définition assez commune est que le DevOps vise à décloisonner, dans une organisation, les aspects _dev_ et _ops_, et à faire en sorte que les protagonistes des deux côtés travaillent ensemble plus efficacement.
+
+Traditionnellement, ces métiers obéissent en effet à des contraintes qu'on pourrait qualifier d'antagonistes :
+
+* Mûs par des impératifs d'innovation et de compétitivité, les développeurs mettent à jour leurs application, pour bénéficier des nouvelles versions de leurs langages et frameworks. Ils adoptent rapidement des technologies émergentes.
+* Garants de la fiabilité et la stabilité des infrastructures, les administrateurs peuvent avoir une approche plus conservatrice : est-ce que telle nouvelle technologie ne va pas amener de nouvelles problématiques (notamment de sécurité) ?
+
+L'approche DevOps cherche à "réconcilier" l'innovation permanente et la fiabilité.
+
+Dans la foulée du mouvement Agile, le mouvement DevOps a donné naissance à de nombreux outils, qui changent la façon dont on développe et met en production des applications.
+
+### Du besoin d'automatisation
+
+Les architectes réseau conçoivent des infrastructures, et les administrateurs système et réseau les exploitent et les maintiennent (ces rôles peuvent être fusionnés dans des organisations de petite taille).
+
+Prenons l'exemple d'un administrateur chargé de mettre en ligne une application web, de façon à la rendre accessible sur Internet, ou sur l'Intranet d'une entreprise.
+
+Dans une approche traditionnelle, il doit installer un système d'exploitation sur une machine (physique ou virtuelle), puis différents paquets logiciels requis pour faire fonctionner l'application.
+
+Si on prend l'exemple d'une application "full-stack" JavaScript, avec un backend Node.js relié à une base de données MySQL, et un frontend Angular, il ou elle devra :
+
+* Installer Node.js,
+* Installer un serveur web qui redirigera le trafic vers l'application Node.js,
+* Installer le serveur MySQL, créer une base de données pour l'application, configurer un compte utilisateur avec des droits sur cette base de données,
+* Récupérer les applications backend et frontend depuis des dépôts Git (hébergés sur GitHub, BitBucket, GitLab, etc.),
+* Éventuellement "builder" les applications,
+* Faire en sorte que l'application Node.js redémarre automatiquement si elle plante,
+* Mettre en place des outils de monitoring, afin d'être averti.e d'incidents,
+* Mettre en place des sauvegardes automatiques,
+* Gérer le renouvellement des certificats pour le HTTPS,
+* etc. !
+
+Toutes ces opérations peuvent être accomplies via des commandes shell, à saisir dans un certain ordre.
+
+Si on effectue cela manuellement, c'est à la fois très chronophage et sujet à des erreurs humaines : même si la procédure est scrupuleusement documentée, personne n'est à l'abri de l'oubli d'une étape.
+
+Une approche possible est d'utiliser des _scripts shell_ pour automatiser, dans une certaine mesure, tout cela. C'est une approche pertinente, mais qui peut poser des problèmes : comment faire si on doit relancer une partie seulement de la procédure ? Est-ce que le fait de lancer plusieurs fois le même script aboutira toujours au même résultat ?
+
+Ansible va permettre de répondre à cette problématique d'automatisation, de façon fiable et efficace.
 
 ### Qu'est-ce qu'Ansible ?
 
@@ -12,15 +61,24 @@ On va, par exemple, pouvoir lancer la même commande sur tous les _managed nodes
 
 L'intérêt est d'automatiser la configuration de serveurs, ce qui offre un gain de temps d'autant plus appréciable que la "flotte" de machines à configurer est conséquente.
 
+## Installer et utiliser Ansible
+
 ### Ansible sous Windows ?
 
 Ansible est un outil orienté Unix. De fait, le _control node_ doit impérativement être un système Un*x ("Unix-like") tel que Linux, FreeBSD, MacOS, etc. Le portage du contrôleur Ansible sous Windows est, de l'aveu de ses développeurs, une tâche colossale, qui ne sera vraisemblablement pas réalisée avant quelques années.
 
-Afin de pouvoir travailler avec Ansible sous Windows, nous allons donc utiliser des machines virtuelles : une pour le _control node_, et au moins une seconde, voire plusieurs, pour les _managed nodes_.
+On peut cependant utiliser Ansible sous Windows :
+
+* soit en utilisant le sous-système Linux pour Windows [WSL2](https://docs.microsoft.com/fr-fr/windows/wsl/install), qui servira de _control node_, et au moins une ou plusieurs machine(s) virtuelle(s) pour le(s) _managed node(s)_.
+* soit uniquement dans des machines virtuelles, le _control node_ étant aussi une VM.
 
 ### VirtualBox ?
 
-Une approche possible est d'utiliser VirtualBox, en préparant manuellement des machines virtuelles. Cela implique entre autres de paramétrer :
+Plusieurs logiciels de virtualisation sont disponibles sur le marché : VMWare, VirtualBox, etc.
+
+VMWare Player (la version gratuite), souffre de limitations, notamment concernant la mise en réseau de machines virtuelles. VirtualBox est gratuit et moins limité.
+
+On pourrait donc l'utiliser, et préparer manuellement des machines virtuelles. Une telle entreprise implique entre autres de paramétrer :
 
 * la quantité de RAM
 * un disque dur virtuel
