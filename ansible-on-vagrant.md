@@ -825,11 +825,14 @@ Voici un playbook très simple, qui va effectuer la même chose que ce qu'on ava
 
   tasks:
   - name: Ensure curl is at the latest version
-    ansible.builtin.apt:
+    apt:
       name: curl
       state: latest
     become: yes
 ```
+
+> :warning: Ce playbook a été très légèrement modifié depuis le 1er cours : on a remplacé `ansible.bu
+iltin.apt` par `apt`.
 
 Ce playbook définit une seule tâche, qui comporte :
 
@@ -900,6 +903,7 @@ On ne va prendre (copier dans le presse-papier) que les lignes jusqu'à la premi
       apt:
         name: nginx
         update_cache: yes
+        state: present
 ```
 
 **Sur le `ansible-host`** (sans être `root`) :
@@ -909,7 +913,7 @@ On ne va prendre (copier dans le presse-papier) que les lignes jusqu'à la premi
 
 Puis exécuter le playbook : `ansible-playbook debian-nginx.yaml`
 
-Il est _possible_ de rencontrer une erreur à ce stade, ce qui a été mon cas !
+Il est _possible_ de rencontrer une erreur à ce stade, ce qui a été mon cas lors de mes premiers essais !
 
 ```
 vagrant@ansible-host:~/nginx$ ansible-playbook debian-nginx.yaml 
@@ -927,7 +931,131 @@ PLAY RECAP *********************************************************************
 
 ```
 
-L'erreur provient de problèmes sur les dépôts `bullseye-updates` et `bullseye-backports` référencés dans `/etc/apt/sources.list`.
+Cette erreur provient de problèmes d'accès aux dépôts `bullseye-updates` et `bullseye-backports` référencés dans `/etc/apt/sources.list`.
+
+> :warning: Ajouts faits depuis le dernier cours
+
+Cette erreur vient d'un décalage de l'horloge de la VM avec l'heure universelle : _Release file for http://deb.debian.org/debian/dists/bullseye-updates/InRelease is not valid yet (invalid for another 2h 46min 20s)._
+
+Pour la résoudre, il nous faut régler l'horloge du noeud `managed-host1`. On pourrait le faire manuellement, via la commande `date -s YYYY-MM-DD HH:mm`, où `YYYY` correspond à l'année, etc. Mais cela ne saurait être fait dans un playbook, puisqu'on ne peut pas savoir à l'avance quand il sera exécuté.
+
+Cependant, il existe un protocole pour la synchronisation des ordinateurs : NTP (_Network Time Protocol_). Le "démon" `chronyd` implémente ce protocole et, quand il est installé et activé sur une machine, permet de synchroniser celle-ci sur l'heure universelle.
+
+On va donc ajouter, **au-dessus** de la tâche existante qui installe Nginx, une autre tâche pour installer `chronyd`, via le package `chrony`.
+
+```
+    - name: install chrony
+      apt:
+        name: chrony
+        update_cache: yes
+        state: present
+```
+
+`chrony` est un service système, il nous faut l'activer. La commande `shell` pour faire cela manuellement serait : `sudo systemctl start chrony`, mais nous allons utiliser le module `service` d'Ansible :
+
+```
+    - name: start chrony
+      service:
+        name: chrony
+        state: started
+
+==> activer service
+
+Voici le contenu du playbook après ces deux modifications :
+
+```
+---
+- name: Configure webserver with nginx
+  hosts: webservers
+  become: True
+  become_method: sudo
+  tasks:
+    - name: install chrony
+      apt:
+        name: chrony
+        update_cache: yes
+        state: present
+    #- name: line insert
+    #  lineinfile:
+    #    path: /etc/chrony/sources.d/
+    #    line: 'Added Line 1'
+    #    insertbefore: BOF
+    - name: add chrony source
+      shell: echo 'server 192.0.2.1 iburst' > /etc/chrony/sources.d/local-ntp-server.sources
+    - name: start chrony
+      service:
+        name: chrony
+        state: started
+        enabled: yes
+    - name: install nginx
+      apt:
+        name: nginx
+        update_cache: yes
+        state: present
+```
+
+Il est possible de tomber **encore** sur la même erreur : le système cible a en effet besoin d'être&hellip; déjà à la bonne heure, pour pouvoir installer `chrony` 😅.
+
+Ajoutons ces deux lignes avant l'installation de `chrony` :
+
+```
+    - name: Set timezone to Europe/Paris
+      timezone:
+        name: Europe/Paris
+    - name: Set system clock to hardware clock
+      command: "hwclock --hctosys"
+```
+
+> AU FINAL, ce qui marche c'est d'ajouter des sources pour chrony 🤯.
+
+```
+---
+- name: Configure webserver with nginx
+  hosts: webservers
+  become: True
+  become_method: sudo
+  tasks:
+    - name: Set timezone to Europe/Paris
+      timezone:
+        name: Europe/Paris
+#    - name: Set system clock to hardware clock
+#      command: "hwclock --hctosys"
+#    - name: Set timezone to Europe/Paris
+#      timezone:
+#        name: Europe/Paris
+    - name: install chrony
+      apt:
+        name: chrony
+        state: present
+    - name: add chrony sources
+      copy:
+        dest: "/etc/chrony/sources.d/local-ntp-server.sources"
+        content: |
+          server 0.debian.pool.ntp.org iburst xleave
+          server 1.debian.pool.ntp.org iburst xleave
+          server 2.debian.pool.ntp.org iburst xleave
+#    - name: add chrony source
+#      shell: echo 'server 192.0.2.1 iburst' > /etc/chrony/sources.d/local-ntp-server.sources
+    - name: start chrony
+      service:
+        name: chronyd
+        state: restarted
+    - name: install nginx
+      apt:
+        name: nginx
+        update_cache: yes
+        state: present
+```
+
+
+
+
+
+
+
+
+
+
 
 Dans ce cas et **dans ce cas seulement**, ajouter cette tâche au-dessus de la tâche "install nginx" de `debian-nginx.yaml` :
 
