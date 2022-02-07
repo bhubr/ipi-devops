@@ -19,7 +19,7 @@ Vous pouvez télécharger un "package" de 2 machines virtuelles, au format OVA, 
 
     * optionnellement, dans "Politique d'adresse MAC", choisir "Générer de nouvelles adresses MAC pour toutes les interfaces réseau" (mais cela n'est pas censé avoir une grande importance !)
     * garder cochée la checkbox "Importer les disques durs comme VDI"
-* Cliquer "Importer" &raquo; Suivant la vitesse de votre disque dur ou SSD, le processus peut prendre un peu de temps.
+* Cliquer "Importer" &rarr; Suivant la vitesse de votre disque dur ou SSD, le processus peut prendre un peu de temps.
 * À l'issue de l'import, vous verrez **deux nouvelles VMs** dans la liste :
 
     * _Debian 11 - Ansible Controller_ où sera installé `ansible`
