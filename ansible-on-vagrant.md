@@ -90,7 +90,7 @@ Il faut également télécharger une "image ISO" d'une distribution Linux (Debia
 
 Cette procédure est assez rapide quand on en a l'habitude, et une fois la première VM ainsi configurée, il est facile de la cloner pour éviter la duplication d'efforts. Cependant, il est tout aussi facile de faire une erreur au cours de la procédure, quand on débute !
 
-> :warning: **Ajout** : pour certain.e.s d'entre vous, Vagrant, décrit dans la section suivante, a posé des problèmes, aussi une alternative basée sur VirtualBox va vous être fournie.
+> :warning: **Ajout** : pour certain.e.s d'entre vous, Vagrant, décrit dans la section suivante, a posé des problèmes, aussi une [alternative basée sur VirtualBox](https://github.com/bhubr/ipi-devops/blob/master/ansible-on-virtualbox.md) vous est proposée.
 
 ### Vagrant
 
