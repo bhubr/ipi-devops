@@ -1,0 +1,105 @@
+---
+- name: install packages
+  hosts: webservers
+  become: yes
+  vars_files:
+    - db_vars.yml
+  #vars:
+  #  db_username: albumapi
+  #  db_password:
+  tasks:
+    - name: install dependencies
+      apt:
+        name:
+          - nginx
+          - git
+          - mariadb-server
+          - mariadb-client
+          - python3-pymysql
+        state: latest
+        update_cache: yes
+    - name: start services
+      service:
+       name: "{{ item }}"
+       state: started
+       enabled: yes
+      with_items:
+          - nginx
+          - mariadb
+    - name: update mysql root password
+      mysql_user:
+        name: root
+        host: "{{ item }}"
+        password: "{{ mysql_root_password }}"
+        state: present
+        priv: "*.*:ALL,GRANT"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      with_items:
+          - "{{ ansible_hostname }}"
+          - 127.0.0.1
+          - ::1
+          - localhost
+    - name: copy .my.cnf with root credentials
+      template: 
+        src: templates/.my.cnf.j2
+        dest: /root/.my.cnf
+        owner: root
+        mode: 0600
+    - name: create mysql user
+      mysql_user:
+        name: "{{ db_username }}"
+        password: "{{ db_password }}"
+        state: present
+        priv: "{{ db_name }}.*:ALL,GRANT"
+    - name: create MySQL database
+      mysql_db:
+        check_implicit_admin: yes
+        login_user: "{{ db_username }}"
+        login_password: "{{ db_password }}"
+        name: "{{ db_name }}"
+        encoding: utf8mb4
+        collation: utf8mb4_unicode_ci
+        state: present
+
+    - name: install Node.js and NPM
+      apt:
+        name:
+          - nodejs
+          - npm
+        state: present
+    - name: install PM2 globally with NPM
+      npm:
+        name: pm2
+        global: yes
+    - name: clone Git repository for application
+      git:
+        repo: https://github.com/bhubr/node-album-api.git
+        dest: /opt/node-album-api
+        version: master
+    - name: install dependencies for application
+      command: npm ci
+      args:
+        chdir: /opt/node-album-api
+    - name: create .env file
+      template:
+        src: templates/env-backend.j2
+        dest: /opt/node-album-api/.env
+        owner: root
+        mode: 0644
+      # attention, normalement on ne met pas de variables
+      # hardcodées ici
+      vars:
+        port: 5000
+        dbuser: "{{ db_username }}"
+        dbpass: "{{ db_password }}"
+        dbname: "{{ db_name }}"
+        jwt_secret: "secret"
+        client_app_origin: "http://localhost:4200"
+    # ne jamais lancer (avec ansible) une commande
+    # qui ne rend pas la main
+    # SI il n'y avait pas de fichier ecosystem.config.js,
+    # on pourrait le créer via un template
+    - name: run application with pm2
+      command: pm2 startOrReload ecosystem.config.js
+      args:
+        chdir: /opt/node-album-api
