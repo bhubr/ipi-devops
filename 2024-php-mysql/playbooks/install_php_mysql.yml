@@ -1,16 +1,57 @@
 ---
 - name: Install PHP and MySQL on Debian-based systems
   hosts: all
-  become: yes  # Use privilege escalation to become the root user
+  become: yes # Use privilege escalation to become the root user
+  vars:
+    db_username: wordpress
+    db_password: wordpress
+    db_name: wordpress
   tasks:
     - name: Update apt cache
       ansible.builtin.apk:
         update_cache: yes
 
+    # These two will be needed to install mysqlclient
+    - name: Install gcc, mariadb-dev, pkgconfig and pip3
+      ansible.builtin.apk:
+        name:
+          - gcc # needed to compile
+          - python3-dev # needed to compile
+          - musl-dev
+          - mariadb-dev
+          - py3-pip
+          - pkgconfig
+        state: present
+
     - name: Install PHP
       ansible.builtin.apk:
-        name: php
+        name:
+          - php
+          - php-fpm
         state: present
+
+    - name: Install curl
+      ansible.builtin.apk:
+        name: curl
+        state: present
+
+    - name: Check if WordPress exists in /var/www/wordpress
+      stat:
+        path: /var/www/wordpress
+      register: wordpress_dir
+
+    # Only if wordpress_dir.stat.exists is false, download WordPress
+    - name: Install WordPress using curl
+      command: curl -o /tmp/wordpress.tar.gz https://wordpress.org/latest.tar.gz
+      args:
+        creates: /tmp/wordpress.tar.gz
+      when: wordpress_dir.stat.exists == False
+
+    # Unzip WordPress only if /var/www/wordpress doesn't exist
+    - name: Unzip WordPress
+      # ansible.builtin.unarchive:
+      command: tar -xzf /tmp/wordpress.tar.gz -C /var/www
+      when: wordpress_dir.stat.exists == False
 
     - name: Install Nginx
       ansible.builtin.apk:
@@ -31,7 +72,7 @@
       ansible.builtin.service:
         name: nginx
         state: started
-        enabled: yes  # Ensure the MySQL service starts on boot
+        enabled: yes # Ensure the MySQL service starts on boot
 
     # Store mariadb status in a variable
     # It'll be useful to conditionally run `/etc/init.d/mariadb setup`
@@ -63,4 +104,51 @@
       ansible.builtin.service:
         name: mariadb
         state: started
-        enabled: yes  # Ensure the MariaDB service starts on boot
+        enabled: yes # Ensure the MariaDB service starts on boot
+
+    - name: Install mysqlclient
+      ansible.builtin.pip:
+        name: mysqlclient
+        state: present
+
+    - name: create MySQL database
+      mysql_db:
+        check_implicit_admin: yes
+        login_user: "{{ db_username }}"
+        login_password: "{{ db_password }}"
+        name: "{{ db_name }}"
+        encoding: utf8mb4
+        collation: utf8mb4_unicode_ci
+        state: present
+
+    - name: create MySQL user
+      mysql_user:
+        name: "{{ db_username }}"
+        password: "{{ db_password }}"
+        priv: "{{ db_name }}.*:ALL,GRANT"
+        state: present
+
+    - name: Downlownload wp salt config
+      command: curl https://api.wordpress.org/secret-key/1.1/salt/
+      register: wp_salt
+
+    # Register wp-salt content as variable
+    # - name: Read wp-salt content
+    #   ansible.builtin.slurp:
+    #     src: /tmp/wp-salt
+    #   register: wp_salt
+
+    # Use variables from vars above and from wp_salt
+    - name: Create wp-config.php
+      ansible.builtin.template:
+        src: templates/wp-config-sample.php.j2
+        dest: /var/www/wordpress/wp-config.php
+        owner: root
+        group: root
+        mode: 0644
+      vars:
+        # db_name: wordpress
+        # db_user: wordpress
+        # db_password: wordpress
+        # wp_salt: "{{ wp_salt['content'] | b64decode }}"
+        # wp_salt: "{{ wp_salt['content'] | b64decode }}"
