@@ -1,0 +1,66 @@
+---
+- name: Install PHP and MySQL on Debian-based systems
+  hosts: all
+  become: yes  # Use privilege escalation to become the root user
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apk:
+        update_cache: yes
+
+    - name: Install PHP
+      ansible.builtin.apk:
+        name: php
+        state: present
+
+    - name: Install Nginx
+      ansible.builtin.apk:
+        name: nginx
+        state: present
+
+    - name: Install MariaDB Server
+      ansible.builtin.apk:
+        name: mariadb
+        state: present
+
+    - name: Install MariaDB Client Tools
+      ansible.builtin.apk:
+        name: mariadb-client
+        state: present
+
+    - name: Start Nginx Service
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: yes  # Ensure the MySQL service starts on boot
+
+    # Store mariadb status in a variable
+    # It'll be useful to conditionally run `/etc/init.d/mariadb setup`
+    - name: Check MariaDB status
+      command: rc-service mariadb status
+      register: mariadb_status
+      ignore_errors: yes
+
+    # # Echo 'MARIADB STARTED' if mariadb is running
+    # - name: Debug MariaDB status
+    #   ansible.builtin.debug:
+    #     msg: "MARIADB STARTED"
+    #   when: mariadb_status.stdout.find('started') != -1
+
+    # # Echo 'MARIADB STOPPED' if mariadb is NOT running
+    # - name: Debug MariaDB status
+    #   ansible.builtin.debug:
+    #     msg: "MARIADB STOPPED"
+    #   when: mariadb_status.stdout.find('started') == -1
+
+    # Problem I had: it failed here after 1st run
+    - name: MariaDB setup
+      command: /etc/init.d/mariadb setup
+      # run only if service is NOT running, that is, the output from
+      # `rc-service mariadb status` doesn't contain `started`
+      when: mariadb_status.stdout.find('started') == -1
+
+    - name: Start MariaDB Service
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: yes  # Ensure the MariaDB service starts on boot

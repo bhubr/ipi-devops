@@ -1,0 +1,2 @@
+[alpine_servers]
+192.168.1.85  ansible_ssh_user=alpine
