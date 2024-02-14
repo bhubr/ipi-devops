@@ -28,6 +28,7 @@
         name:
           - php
           - php-fpm
+          - php-mysqli
         state: present
 
     - name: Install curl
@@ -39,6 +40,11 @@
       stat:
         path: /var/www/wordpress
       register: wordpress_dir
+
+    - name: Check if wp-config.php exists in /var/www/wordpress
+      stat:
+        path: /var/www/wordpress/wp-config.php
+      register: wp_config
 
     # Only if wordpress_dir.stat.exists is false, download WordPress
     - name: Install WordPress using curl
@@ -131,6 +137,7 @@
     - name: Downlownload wp salt config
       command: curl https://api.wordpress.org/secret-key/1.1/salt/
       register: wp_salt
+      when: wp_config.stat.exists == False
 
     # Register wp-salt content as variable
     # - name: Read wp-salt content
@@ -146,9 +153,36 @@
         owner: root
         group: root
         mode: 0644
-      vars:
-        # db_name: wordpress
-        # db_user: wordpress
-        # db_password: wordpress
-        # wp_salt: "{{ wp_salt['content'] | b64decode }}"
-        # wp_salt: "{{ wp_salt['content'] | b64decode }}"
+      when: wp_config.stat.exists == False
+
+    # Check that default.conf.bak exists
+    - name: Check if default.conf.bak exists
+      ansible.builtin.stat:
+        path: /etc/nginx/http.d/default.conf.bak
+      register: default_conf_bak
+
+    # Backup nginx default vhost config if not already backed up
+    - name: Backup default Nginx vhost config
+      command: mv /etc/nginx/http.d/default.conf /etc/nginx/http.d/default.conf.bak
+      when: default_conf_bak.stat.exists == False
+
+    # Overwrite default vhost config with our own
+    - name: Write new vhost config
+      ansible.builtin.template:
+        src: templates/nginx-wordpress.conf.j2
+        dest: /etc/nginx/http.d/nginx-wordpress.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Restart PHP-FPM
+      ansible.builtin.service:
+        name: php-fpm81
+        state: restarted
+        enabled: yes # Ensure the PHP-FPM service starts on boot
+
+    - name: Restart Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+        enabled: yes # Ensure the PHP-FPM service starts on boot
