@@ -28,7 +28,12 @@
         name:
           - php
           - php-fpm
-          - php-mysqli
+          - php-iconv # for WordPress
+          - php-mysqli # for WordPress/MySQL
+          - php-phar # for wp-cli
+          - php-json # for wp-cli
+          - php-openssl # for wp-cli
+          - php-curl # for wp-cli
         state: present
 
     - name: Install curl
@@ -186,3 +191,33 @@
         name: nginx
         state: restarted
         enabled: yes # Ensure the PHP-FPM service starts on boot
+
+    # Check if wp-cli exists
+    - name: Check if wp-cli exists
+      ansible.builtin.stat:
+        path: /usr/local/bin/wp
+      register: wp_cli
+
+    # Download WordPress CLI
+    - name: Download WordPress CLI
+      command: curl -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+      args:
+        creates: /usr/local/bin/wp
+      when: wp_cli.stat.exists == False
+
+    # Make WordPress CLI executable
+    - name: Make WordPress CLI executable
+      command: chmod +x /usr/local/bin/wp
+
+    # Check if WordPress is installed
+    - name: Check if WordPress is installed
+      command: wp core is-installed --path=/var/www/wordpress
+      register: wp_installed
+      ignore_errors: yes
+
+    # WP core install (cwd: /var/www/wordpress)
+    - name: Install WordPress
+      command: wp core install --url=192.168.1.85 --title=My\ Blog --admin_user=admin --admin_password=admin --admin_email=benoithubert@gmail.com
+      args:
+        chdir: /var/www/wordpress
+      when: wp_installed.rc != 0
